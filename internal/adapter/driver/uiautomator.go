@@ -1,7 +1,11 @@
 package driver
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"image"
+	"image/png"
 	"os/exec"
 	"strings"
 	"time"
@@ -9,6 +13,8 @@ import (
 	"github.com/mobilefarm/af/phone-observer/internal/domain"
 	"github.com/mobilefarm/af/phone-observer/internal/port"
 )
+
+var adbCommandContext = exec.CommandContext
 
 type UIAutomatorDriver struct {
 	log port.Logger
@@ -20,15 +26,26 @@ func NewUIAutomatorDriver(log port.Logger) *UIAutomatorDriver {
 
 func (u *UIAutomatorDriver) DumpUI(ctx context.Context, serial string) (domain.ScreenState, error) {
 	if serial == "stub" {
-		return domain.ScreenState{Serial: serial, XMLDump: "<hierarchy/>"}, nil
+		return domain.ScreenState{
+			Serial:  serial,
+			XMLDump: `<hierarchy><node text="OK" resource-id="stub:id/ok" content-desc="Create" hint="" class="android.widget.Button" bounds="[0,0][2,2]" /></hierarchy>`,
+		}, nil
 	}
-	remote := "/sdcard/window_dump.xml"
-	_, _ = exec.CommandContext(ctx, "adb", "-s", serial, "shell", "uiautomator", "dump", remote).CombinedOutput()
-	out, err := exec.CommandContext(ctx, "adb", "-s", serial, "shell", "cat", remote).Output()
+	remote := fmt.Sprintf("/sdcard/af_window_dump_%d.xml", time.Now().UnixNano())
+	_ = adbCommandContext(ctx, "adb", "-s", serial, "shell", "rm", "-f", remote).Run()
+	dumpOut, err := adbCommandContext(ctx, "adb", "-s", serial, "shell", "uiautomator", "dump", remote).CombinedOutput()
+	if err != nil || dumpHasError(dumpOut) {
+		return domain.ScreenState{}, fmt.Errorf("%w: uiautomator dump: %s", domain.ErrUIDumpFailed, strings.TrimSpace(string(dumpOut)))
+	}
+	out, err := adbCommandContext(ctx, "adb", "-s", serial, "shell", "cat", remote).Output()
 	if err != nil {
 		return domain.ScreenState{}, err
 	}
-	return domain.ScreenState{Serial: serial, XMLDump: string(out)}, nil
+	xmlDump := string(out)
+	if !strings.Contains(xmlDump, "<hierarchy") {
+		return domain.ScreenState{}, fmt.Errorf("%w: uiautomator dump не вернул hierarchy", domain.ErrUIDumpFailed)
+	}
+	return domain.ScreenState{Serial: serial, XMLDump: xmlDump}, nil
 }
 
 func (u *UIAutomatorDriver) DetectState(ctx context.Context, serial string) (domain.ScreenState, error) {
@@ -50,7 +67,7 @@ func (u *UIAutomatorDriver) DetectState(ctx context.Context, serial string) (dom
 }
 
 func (u *UIAutomatorDriver) Ping(ctx context.Context) error {
-	return exec.CommandContext(ctx, "adb", "version").Run()
+	return adbCommandContext(ctx, "adb", "version").Run()
 }
 
 var _ port.UIDumper = (*UIAutomatorDriver)(nil)
@@ -64,18 +81,44 @@ func NewAdbScreenshotDriver(log port.Logger) *AdbScreenshotDriver {
 }
 
 func (a *AdbScreenshotDriver) Capture(ctx context.Context, serial string) (domain.Screenshot, error) {
+	takenAt := time.Now().UTC()
+	var out []byte
+	var err error
 	if serial == "stub" {
-		return domain.Screenshot{Serial: serial, ObjectKey: time.Now().Format("20060102-150405"), Bytes: []byte("stub")}, nil
+		out, err = stubScreenshotPNG()
+	} else {
+		out, err = adbCommandContext(ctx, "adb", "-s", serial, "exec-out", "screencap", "-p").Output()
 	}
-	out, err := exec.CommandContext(ctx, "adb", "-s", serial, "exec-out", "screencap", "-p").Output()
+	if err != nil {
+		return domain.Screenshot{}, err
+	}
+	cfg, err := png.DecodeConfig(bytes.NewReader(out))
 	if err != nil {
 		return domain.Screenshot{}, err
 	}
 	return domain.Screenshot{
 		Serial:    serial,
-		ObjectKey: time.Now().Format("20060102-150405"),
+		ObjectKey: takenAt.Format("20060102-150405"),
 		Bytes:     out,
+		SizeBytes: int64(len(out)),
+		Width:     int32(cfg.Width),
+		Height:    int32(cfg.Height),
+		TakenAt:   takenAt,
 	}, nil
 }
 
+func stubScreenshotPNG() ([]byte, error) {
+	var buf bytes.Buffer
+	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	if err := png.Encode(&buf, img); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 var _ port.ScreenshotCapture = (*AdbScreenshotDriver)(nil)
+
+func dumpHasError(out []byte) bool {
+	lowered := strings.ToLower(string(out))
+	return strings.Contains(lowered, "error:") || strings.Contains(lowered, "could not get idle state")
+}

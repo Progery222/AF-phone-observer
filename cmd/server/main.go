@@ -40,16 +40,33 @@ func main() {
 
 	observeSvc := service.NewObserveService(ui, logger)
 	screenshotSvc := service.NewScreenshotService(shot, storage, logger)
+	observationDispatcher := service.NewObservationDispatcher(
+		screenshotSvc,
+		observeSvc,
+		cfg.ScreenshotQueueSize,
+		cfg.ScreenshotHighQueueSize,
+	)
+	screenAnalyzer := driver.NewCascadingScreenAnalyzer(cfg, http.DefaultClient, logger)
+	if screenAnalyzer.Configured() {
+		observationDispatcher.SetScreenAnalyzer(screenAnalyzer)
+	}
 
 	grpcServer := grpc.NewServer()
 	grpcHandler := handler.NewObserverHandler(observeSvc, screenshotSvc, logger)
 	grpcHandler.Register(grpcServer)
 
-	health := handler.NewHealthHandler(storage)
-	healthServer := &http.Server{Addr: cfg.HealthAddr, Handler: health.Routes()}
+	httpHandler := handler.NewHTTPHandler(
+		storage,
+		observationDispatcher,
+		time.Duration(cfg.ScreenshotTimeoutSec)*time.Second,
+		time.Duration(cfg.DumpUITimeoutSec)*time.Second,
+		logger,
+	)
+	healthServer := &http.Server{Addr: cfg.HealthAddr, Handler: httpHandler.Routes()}
 
 	go func() {
-		lis, err := net.Listen("tcp", cfg.GRPCAddr)
+		listenConfig := net.ListenConfig{}
+		lis, err := listenConfig.Listen(ctx, "tcp", cfg.GRPCAddr)
 		if err != nil {
 			logger.Error("grpc listen", "error", err)
 			os.Exit(1)
