@@ -1,0 +1,18 @@
+# AF-phone-observer — правила для Cursor (краткая версия)
+
+Полная документация: CLAUDE.md, AGENTS.md, .cursor/rules/af.mdc
+
+- Go 1.22+ микросервис платформы AF (Android Farm)
+- uiautomator UI-dump, ADB screencap, MinIO для PNG
+- gRPC :50053, health/ready :9090
+- Hexagonal: domain → port → service → adapter (driver + minio repository)
+- Stateless worker; репозиторий Progery222/AF-phone-observer
+- API-сообщения на русском
+
+## Git (GitHub Flow)
+
+- Не пушить в main — только feature-ветка + PR с ревью
+- Коммиты: Conventional Commits (feat:, fix:, refactor:, docs:, test:, chore:)
+- Цикл: pull main → ветка → коммиты → push → PR → CI + апрув → merge
+- Синхронизация: rebase origin/main (личная ветка) или merge (общая)
+- Координация: Issues, Projects (канбан), Assignees

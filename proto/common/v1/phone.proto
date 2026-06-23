@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package af.common.v1;
+
+option go_package = "github.com/mobilefarm/af/phone-observer/gen/common/v1;commonv1";
+
+message PhoneRef {
+  string serial = 1;
+}

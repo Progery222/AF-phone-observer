@@ -1,0 +1,48 @@
+---
+description: AF-phone-observer — uiautomator, MinIO, gRPC :50053, hexagonal Go
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# AF-phone-observer
+
+Микросервис наблюдения за экраном Android платформы **AF** (Android Farm). Репозиторий: **Progery222/AF-phone-observer**.
+
+## Стек
+
+Go 1.22+, gRPC/protobuf, ADB (screencap, uiautomator dump), MinIO, JSON slog, HTTP health `:9090`, gRPC `:50053`.
+
+## Архитектура
+
+- **Hexagonal:** `internal/domain` → `internal/port` (UIDumper, ScreenshotCapture, ObjectStorage) → `internal/service` → `internal/adapter` (handler, driver, repository/minio).
+- Структура: `cmd/server/main.go`, `internal/`, `proto/observer/v1/`, `deploy/Dockerfile`, `Makefile`.
+- Protobuf — единый контракт API. Graceful shutdown 10s. ADB/MinIO только в adapter.
+- MinIO недоступен → `NoopStorage`, сервис стартует с warn.
+- Serial `"stub"` — no-op для тестов.
+
+## gRPC API
+
+CaptureScreenshot, DumpUI, DetectState — см. `proto/observer/v1/observer.proto`.
+
+## Env
+
+`GRPC_ADDR` (`:50053`), `HEALTH_ADDR` (`:9090`), `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`, `MINIO_USE_SSL`, `SCREENSHOT_TMP_DIR`, `LOG_LEVEL`.
+
+## Git / GitHub Flow
+
+- Автономный репозиторий; модель — **GitHub Flow**.
+- **Не пушить в `main`** — только ветка (`feature/`, `fix/`, …) + Pull Request.
+- Коммиты: **Conventional Commits** — `feat:` `fix:` `refactor:` `docs:` `test:` `chore:`.
+- Ежедневно: `git pull origin main`, для личных веток — `rebase origin/main`, затем `push --force-with-lease`.
+- Merge после зелёного CI и 1–2 апрувов; ветку удалить.
+- Координация: Issues, Projects (To Do → In Progress → Review → Done), Assignees.
+
+## Правила для агентов
+
+- Минимальный diff; read-only наблюдение (без жестов).
+- `domain`/`service` без импортов gRPC, MinIO, exec.
+- Health/ready на HTTP `:9090` (MinIO Ping).
+- API-сообщения на русском.
+- Не коммитить и не пушить без явной просьбы пользователя.
+- Подробности: `CLAUDE.md`, `AGENTS.md`.

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package af.observer.v1;
+
+option go_package = "github.com/mobilefarm/af/phone-observer/gen/observer/v1;observerv1";
+
+service ObserverService {
+  rpc CaptureScreenshot(CaptureScreenshotRequest) returns (CaptureScreenshotResponse);
+  rpc DumpUI(DumpUIRequest) returns (DumpUIResponse);
+  rpc DetectState(DetectStateRequest) returns (DetectStateResponse);
+}
+
+message CaptureScreenshotRequest { string serial = 1; }
+message CaptureScreenshotResponse {
+  bool success = 1;
+  string object_key = 2;
+  string message = 3;
+}
+
+message DumpUIRequest { string serial = 1; }
+message DumpUIResponse {
+  string serial = 1;
+  string xml_dump = 2;
+}
+
+message DetectStateRequest { string serial = 1; }
+message DetectStateResponse {
+  string serial = 1;
+  string package_name = 2;
+  string activity = 3;
+  string xml_dump = 4;
+}
