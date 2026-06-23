@@ -1,0 +1,49 @@
+# golangci-lint configuration (whitelist mode)
+# Optimized for golangci-lint v2.4.0+
+# Docs: https://golangci-lint.run/usage/configuration/
+
+---
+version: "2"
+
+run:
+  # Тестовые файлы тоже линтуем (исключения для них — в issues.exclude-rules)
+  tests: true
+
+linters:
+  # Whitelist: включаем только явно перечисленные линтеры
+  default: none
+
+  enable:
+    # ===== Корректность / баги =====
+    - errcheck        # непроверенные ошибки
+    - govet           # подозрительные конструкции (go vet)
+    - staticcheck     # большой набор правил корректности
+    - ineffassign     # бесполезные присваивания
+    - unused          # неиспользуемый код
+    - bodyclose       # незакрытое HTTP response body
+    - noctx           # вызовы без context.Context
+    - contextcheck    # не унаследованный context
+    - nilerr          # return nil при наличии ошибки
+    - nilnesserr      # err != nil, но возвращается другой nil-error
+    - errorlint       # совместимость с error wrapping (Go 1.13+)
+    - copyloopvar     # копирование loop-переменных
+    - makezero        # слайсы с ненулевой длиной через append
+    - wastedassign    # мёртвые присваивания
+    - rowserrcheck    # БД: проверка Rows.Err
+    - sqlclosecheck   # БД: закрытие Rows/Stmt
+
+    # ===== Дешёвый полезный стиль =====
+    - misspell        # опечатки в английских словах
+    - unconvert       # лишние конверсии типов
+    - unparam         # неиспользуемые параметры функций
+    - usestdlibvars   # использовать константы из stdlib
+    - whitespace      # лишние пустые строки в начале/конце блоков
+    - sloglint        # консистентный стиль log/slog (у вас slog)
+    - nolintlint      # корректность //nolint директив
+
+issues:
+  exclude-rules:
+    # Тесты — мягче
+    - path: _test\.go
+      linters:
+        - errcheck

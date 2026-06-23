@@ -1,4 +1,4 @@
-.PHONY: build run test proto docker-build tidy
+.PHONY: build run test proto docker-build tidy lint lint-fix
 
 BINARY=phone-observer
 MAIN=./cmd/server
@@ -14,6 +14,12 @@ test:
 
 tidy:
 	go mod tidy
+
+lint:
+	golangci-lint run ./...
+
+lint-fix:
+	golangci-lint run --fix ./...
 
 proto:
 	protoc -I proto \
