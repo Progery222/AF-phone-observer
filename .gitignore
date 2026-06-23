@@ -3,3 +3,7 @@ bin/
 *.exe
 .idea/
 .vscode/
+.cursorrules
+.cursor
+
+

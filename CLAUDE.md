@@ -12,7 +12,7 @@
 
 | Слой | Технология | Зачем |
 |------|------------|-------|
-| Язык | **Go 1.22+** | Параллельные dump/screencap, малый образ |
+| Язык | **Go 1.25+** | Параллельные dump/screencap, малый образ |
 | API | **gRPC + protobuf** | Низкая latency для orchestrator |
 | Android | **ADB**, **uiautomator** | `screencap`, `uiautomator dump`, `cat` XML |
 | Storage | **MinIO** (S3-compatible) | Персистентные скриншоты `{serial}/{timestamp}.png` |

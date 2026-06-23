@@ -14,6 +14,7 @@ import (
 	"github.com/mobilefarm/af/phone-observer/internal/adapter/handler"
 	"github.com/mobilefarm/af/phone-observer/internal/adapter/repository"
 	"github.com/mobilefarm/af/phone-observer/internal/config"
+	"github.com/mobilefarm/af/phone-observer/internal/port"
 	"github.com/mobilefarm/af/phone-observer/internal/service"
 	"google.golang.org/grpc"
 )
@@ -28,6 +29,7 @@ func main() {
 	ui := driver.NewUIAutomatorDriver(logger)
 	shot := driver.NewAdbScreenshotDriver(logger)
 
+	var storage port.ObjectStorage
 	storage, closeStorage, err := repository.NewMinIOStorage(cfg)
 	if err != nil {
 		logger.Warn("minio unavailable, storage disabled", "error", err)

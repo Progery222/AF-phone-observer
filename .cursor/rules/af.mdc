@@ -11,7 +11,7 @@ alwaysApply: true
 
 ## Стек
 
-Go 1.22+, gRPC/protobuf, ADB (screencap, uiautomator dump), MinIO, JSON slog, HTTP health `:9090`, gRPC `:50053`.
+Go 1.25+, gRPC/protobuf, ADB (screencap, uiautomator dump), MinIO, JSON slog, HTTP health `:9090`, gRPC `:50053`.
 
 ## Архитектура
 

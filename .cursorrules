@@ -2,7 +2,7 @@
 
 Полная документация: CLAUDE.md, AGENTS.md, .cursor/rules/af.mdc
 
-- Go 1.22+ микросервис платформы AF (Android Farm)
+- Go 1.25+ микросервис платформы AF (Android Farm)
 - uiautomator UI-dump, ADB screencap, MinIO для PNG
 - gRPC :50053, health/ready :9090
 - Hexagonal: domain → port → service → adapter (driver + minio repository)
