@@ -1,9 +1,9 @@
 bin/
 .env
+.DS_Store
+phone-observer
 *.exe
 .idea/
 .vscode/
 .cursorrules
-.cursor
-
-
+.cursor/

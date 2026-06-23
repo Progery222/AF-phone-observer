@@ -58,6 +58,14 @@ Makefile, go.mod
 2. `adb shell cat /sdcard/window_dump.xml`
 3. `DetectState` — parse `package="..."` из XML
 
+**Параллельная работа с телефонами:**
+- Один `serial` = один последовательный worker/исполнитель.
+- Внутри одного телефона команды наблюдения идут строго по очереди.
+- Разные телефоны выполняются параллельно и не блокируют друг друга.
+- HTTP/gRPC-запрос не создаёт отдельную систему или процесс на соединение: он отправляет задачу в worker конкретного телефона и ждёт результат.
+- ADB-вызовы из handler без per-serial serialization запрещены.
+- Для 100+ устройств масштабирование идёт через parallel serial-workers и горизонтальные observer-реплики на нодах с локальным ADB-доступом.
+
 **Fallback:** MinIO недоступен → `NoopStorage`, warn в лог, DumpUI работает.
 
 ## Обязательные практики
@@ -87,36 +95,37 @@ Env: `GRPC_ADDR` (`:50053`), `HEALTH_ADDR`, `MINIO_*`, `SCREENSHOT_TMP_DIR`, `LO
 
 | Правило | Детали |
 |---------|--------|
-| Запрет прямого push в `main` | только через PR с ревью |
+| Запрет прямого push в `master` | только через PR с ревью |
 | Ветка на задачу | `feature/`, `fix/`, `refactor/`, `chore/` |
 | Коммиты | Conventional Commits: `feat:` `fix:` `refactor:` `docs:` `test:` `chore:` |
-| Синхронизация | раз в день: `git fetch` + `rebase origin/main` (личная ветка) или `merge` (общая) |
+| Синхронизация | раз в день: `git fetch` + `rebase origin/master` (личная ветка) или `merge` (общая) |
 | После rebase | `git push --force-with-lease` |
 | Merge | зелёный CI + 1–2 апрува → merge → удалить ветку |
 
 **Ежедневный цикл:**
 
 ```bash
-git checkout main && git pull origin main
+git checkout master && git pull origin master
 git checkout -b feature/my-task
 git add . && git commit -m "feat: описание"
 git push -u origin feature/my-task
 # → открыть PR на GitHub
 ```
 
-**Конфликты:** убрать маркеры `<<<<<<<` / `=======` / `>>>>>>>`, `git add`, `git rebase --continue`.
+**Конфликты:** убрать стандартные git-маркеры конфликта, `git add`, `git rebase --continue`.
 
 **Координация:** Issues (задачи), Projects (канбан: To Do → In Progress → Review → Done), Assignees.
 
-**Защита `main` (тимлид):** require PR, approvals, status checks, branch up to date.
+**Защита `master` (тимлид):** require PR, approvals, status checks, branch up to date.
 
 ## Что не делать
 
-- **Не пушить в `main`** и не создавать коммиты без явной просьбы пользователя.
+- **Не пушить в `master`** и не создавать коммиты без явной просьбы пользователя.
 - Не выполнять tap/swipe/text — это executor (`:50051`).
 - Не управлять ADB connect/forward — это connector (`:50052`).
 - Не вызывать adb или MinIO из `service/` — только через `port.*`.
 - Не коммитить `.env` с MinIO credentials.
+- В документации и правилах использовать пути относительно корня репозитория (`CLAUDE.md`, `docs/tz.md`), не локальные абсолютные пути разработчика.
 
 ## Язык
 

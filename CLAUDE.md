@@ -94,6 +94,8 @@ AF-phone-observer/
 4. **Контекст** — ADB и MinIO через `context.Context`.
 5. **Stub serial** — `"stub"` для тестов без устройства и MinIO.
 6. **Ключ объекта** — `{serial}/{YYYYMMDD-HHMMSS}.png` в bucket `MINIO_BUCKET`.
+7. **Параллельная работа с телефонами** — Один `serial` = один последовательный worker/исполнитель; внутри одного телефона команды наблюдения идут строго по очереди, разные телефоны выполняются параллельно и не блокируют друг друга. HTTP/gRPC-запрос не создаёт отдельную систему или процесс на соединение: он отправляет задачу в worker конкретного телефона и ждёт результат. ADB-вызовы из handler без per-serial serialization запрещены. Для 100+ устройств масштабирование идёт через parallel serial-workers и горизонтальные observer-реплики на нодах с локальным ADB-доступом.
+8. **Repo-relative paths** — в документации и правилах использовать пути относительно корня репозитория (`CLAUDE.md`, `docs/tz.md`), не локальные абсолютные пути разработчика.
 
 ## Команды
 
@@ -136,13 +138,13 @@ make docker-build
 
 ### Принципы
 
-- **Никто не пушит напрямую в `main`.**
-- Каждая задача — **отдельная ветка**; в `main` только через **Pull Request** с ревью.
-- Короткие ветки, маленькие коммиты, ежедневная синхронизация с `main`.
+- **Никто не пушит напрямую в `master`.**
+- Каждая задача — **отдельная ветка**; в `master` только через **Pull Request** с ревью.
+- Короткие ветки, маленькие коммиты, ежедневная синхронизация с `master`.
 
-### Защита ветки `main` (настраивает тимлид, один раз)
+### Защита ветки `master` (настраивает тимлид, один раз)
 
-Settings → Branches → branch protection для `main`:
+Settings → Branches → branch protection для `master`:
 
 - Require pull request before merging
 - Require approvals (1–2)
@@ -152,8 +154,8 @@ Settings → Branches → branch protection для `main`:
 ### Ежедневный цикл
 
 ```bash
-# 1. свежий main
-git checkout main && git pull origin main
+# 1. свежий master
+git checkout master && git pull origin master
 
 # 2. ветка под задачу
 git checkout -b feature/async-minio-upload      # fix/, refactor/, chore/
@@ -169,14 +171,14 @@ git push -u origin feature/async-minio-upload
 
 **Префиксы коммитов:** `feat:` `fix:` `refactor:` `docs:` `test:` `chore:`
 
-### Синхронизация со свежим `main`
+### Синхронизация со свежим `master`
 
-Раз в день подтягивай `main`, чтобы не копить конфликты:
+Раз в день подтягивай `master`, чтобы не копить конфликты:
 
 ```bash
 git fetch origin
-git rebase origin/main        # если в ветке работаешь только ты
-# git merge origin/main       # если ветку делят несколько человек
+git rebase origin/master      # если в ветке работаешь только ты
+# git merge origin/master     # если ветку делят несколько человек
 git push --force-with-lease   # после rebase
 ```
 
@@ -185,7 +187,7 @@ git push --force-with-lease   # после rebase
 
 ### Конфликты
 
-Git помечает спорные места `<<<<<<<` `=======` `>>>>>>>`. Оставить корректный вариант, убрать маркеры:
+Git помечает спорные места стандартными маркерами конфликта. Оставить корректный вариант, убрать маркеры:
 
 ```bash
 git add <файл>
@@ -204,22 +206,23 @@ git rebase --continue          # или git commit при merge
 
 ### Чек-лист перед merge
 
-- [ ] `git checkout main && git pull`
+- [ ] `git checkout master && git pull`
 - [ ] новая ветка под задачу
 - [ ] маленькие коммиты (Conventional Commits)
-- [ ] раз в день: rebase на `main`
+- [ ] раз в день: rebase на `master`
 - [ ] push + PR с описанием
 - [ ] зелёный CI + апрув → merge → удалить ветку
 
 ## Конвенции для агентов
 
 - Минимальный diff; не менять protobuf без согласования с orchestrator.
-- **Не пушить в `main`** — только feature-ветка + PR.
+- **Не пушить в `master`** — только feature-ветка + PR.
 - Коммиты — **Conventional Commits** (`feat:`, `fix:`, …).
 - Комментарии — только для неочевидной логики (parse package из XML, noop storage).
 - Сообщения gRPC — на **русском**.
 - Не коммитить MinIO credentials и `.env`.
 - Скриншоты и dump — read-only; жесты только в executor.
+- В документации ссылаться на файлы repo-relative путями, не абсолютными локальными путями разработчика.
 
 ## Связанные документы
 
