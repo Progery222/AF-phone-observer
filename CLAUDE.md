@@ -104,6 +104,8 @@ make proto          # protoc + plugins (см. Makefile)
 make build
 make run            # gRPC :50053 + health :9090
 make test
+make lint           # golangci-lint (whitelist, см. .golangci.yml)
+make lint-fix       # golangci-lint --fix
 make docker-build
 ```
 
