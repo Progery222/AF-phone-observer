@@ -1,110 +1,114 @@
-﻿# AF-phone-observer
+# AF-phone-observer
 
-╨Ь╨╕╨║╤А╨╛╤Б╨╡╤А╨▓╨╕╤Б ╨┐╨╗╨░╤В╤Д╨╛╤А╨╝╤Л **AF** ╨┤╨╗╤П read-only ╨╜╨░╨▒╨╗╤О╨┤╨╡╨╜╨╕╤П ╨╖╨░ ╤Н╨║╤А╨░╨╜╨╛╨╝ Android-╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨░:
-╤Б╨║╤А╨╕╨╜╤И╨╛╤В╤Л ╤З╨╡╤А╨╡╨╖ ADB `screencap`, UI dump ╤З╨╡╤А╨╡╨╖ `uiautomator` ╨╕ ╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╡╨╜╨╕╨╡ ╤В╨╡╨║╤Г╤Й╨╡╨│╨╛ ╤Б╨╛╤Б╤В╨╛╤П╨╜╨╕╤П ╤Н╨║╤А╨░╨╜╨░.
+Микросервис платформы **AF** для read-only наблюдения за экраном Android-устройства:
+скриншоты через ADB `screencap`, UI dump через `uiautomator` и определение текущего состояния экрана.
 
-## ╨з╤В╨╛ ╨┤╨╡╨╗╨░╨╡╤В ╤Б╨╡╤А╨▓╨╕╤Б
+## Что делает сервис
 
-- ╨┐╨╛╨┤╨╜╨╕╨╝╨░╨╡╤В gRPC-╤Б╨╡╤А╨▓╨╡╤А ╨╜╨░ `:50053`; protobuf-╨║╨╛╨╜╤В╤А╨░╨║╤В ╨╡╤Б╤В╤М, ╨╜╨╛ `ObserverService` ╨┐╨╛╨║╨░ ╨╜╨╡ ╨╖╨░╤А╨╡╨│╨╕╤Б╤В╤А╨╕╤А╨╛╨▓╨░╨╜ ╨▓ Go-handler;
-- ╨╛╤В╨┤╨░╤С╤В health/ready endpoints ╨╜╨░ `:9090` ╨┐╤А╨╕ ╨┐╤А╤П╨╝╨╛╨╝ ╨╖╨░╨┐╤Г╤Б╨║╨╡ ╤Б╨╡╤А╨▓╨╕╤Б╨░;
-- ╤Б╨╛╤Е╤А╨░╨╜╤П╨╡╤В PNG-╤Б╨║╤А╨╕╨╜╤И╨╛╤В╤Л ╨▓ MinIO;
-- ╨┐╤А╨╛╨┤╨╛╨╗╨╢╨░╨╡╤В ╤А╨░╨▒╨╛╤В╨░╤В╤М ╨▓ noop-╤А╨╡╨╢╨╕╨╝╨╡, ╨╡╤Б╨╗╨╕ MinIO ╨╜╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╡╨╜ ╨┐╤А╨╕ ╤Б╤В╨░╤А╤В╨╡;
-- ╨╜╨╡ ╨▓╤Л╨┐╨╛╨╗╨╜╤П╨╡╤В ╨╢╨╡╤Б╤В╤Л, tap, swipe, ╨▓╨▓╨╛╨┤ ╤В╨╡╨║╤Б╤В╨░ ╨╕ ADB forward.
+- поднимает gRPC-сервер на `:50053`; protobuf-контракт есть, но `ObserverService` пока не зарегистрирован в Go-handler;
+- отдаёт health/ready endpoints на `:9090` при прямом запуске сервиса;
+- сохраняет PNG-скриншоты в MinIO;
+- продолжает работать в noop-режиме, если MinIO недоступен при старте;
+- не выполняет жесты, tap, swipe, ввод текста и ADB forward.
 
-## ╨д╤Г╨╜╨║╤Ж╨╕╨╛╨╜╨░╨╗╤М╨╜╨╛╤Б╤В╤М, ╨╝╨╡╤В╨╛╨┤╤Л ╨╕ ╤Б╨▓╤П╨╖╨╕
+## Функциональность, методы и связи
 
-`AF-phone-observer` тАФ read-only ╤Б╨╡╤А╨▓╨╕╤Б ╨╜╨░╨▒╨╗╤О╨┤╨╡╨╜╨╕╤П. ╨Ю╨╜ ╨┐╨╛╨╗╤Г╤З╨░╨╡╤В ╨┤╨░╨╜╨╜╤Л╨╡ ╤Б Android-╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨░, ╨┐╤А╨╕╨▓╨╛╨┤╨╕╤В ╨╕╤Е ╨║ ╤Г╨┤╨╛╨▒╨╜╨╛╨╝╤Г API-╨╛╤В╨▓╨╡╤В╤Г ╨╕ ╨╛╤В╨┤╨░╤С╤В ╨┤╤А╤Г╨│╨╕╨╝ ╤З╨░╤Б╤В╤П╨╝ AF ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л, UI-╨┤╨╡╤А╨╡╨▓╨╛, ╤Б╨║╤А╨╕╨╜╤И╨╛╤В╤Л ╨╕ ╨┐╤А╨╕╨╖╨╜╨░╨║╨╕ ╤В╨╡╨║╤Г╤Й╨╡╨│╨╛ ╤Н╨║╤А╨░╨╜╨░.
+`AF-phone-observer` — read-only сервис наблюдения. Он получает данные с Android-устройства, приводит их к удобному API-ответу и отдаёт другим частям AF координаты, UI-дерево, скриншоты и признаки текущего экрана.
 
-### ╨Ю╤Б╨╜╨╛╨▓╨╜╨╛╨╣ ╤Д╤Г╨╜╨║╤Ж╨╕╨╛╨╜╨░╨╗
+### Основной функционал
 
-| ╨Т╨╛╨╖╨╝╨╛╨╢╨╜╨╛╤Б╤В╤М | ╨з╤В╨╛ ╨┤╨╡╨╗╨░╨╡╤В |
+| Возможность | Что делает |
 |-------------|------------|
-| ╨б╨║╤А╨╕╨╜╤И╨╛╤В | ╨Я╨╛╨╗╤Г╤З╨░╨╡╤В PNG ╤З╨╡╤А╨╡╨╖ ADB `exec-out screencap -p`, ╨╛╨┐╤А╨╡╨┤╨╡╨╗╤П╨╡╤В ╤А╨░╨╖╨╝╨╡╤А ╨╕╨╖╨╛╨▒╤А╨░╨╢╨╡╨╜╨╕╤П ╨╕ ╤Б╨╛╤Е╤А╨░╨╜╤П╨╡╤В ╤А╨╡╨╖╤Г╨╗╤М╤В╨░╤В ╨▓ MinIO ╨╕╨╗╨╕ `NoopStorage` |
-| UI dump | ╨Ч╨░╨┐╤Г╤Б╨║╨░╨╡╤В `uiautomator dump`, ╤З╨╕╤В╨░╨╡╤В XML ╤Б ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ ╨╕ ╨┐╨░╤А╤Б╨╕╤В ╤Н╨╗╨╡╨╝╨╡╨╜╤В╤Л: `type`, `text`, `resource_id`, `content_desc`, `hint`, `bounds`, `center` |
-| ╨Я╨╛╨╕╤Б╨║ ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨░ | ╨Ш╤Й╨╡╤В ╨╛╨┤╨╕╨╜ UI-╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨┐╨╛ `resource_id`, `text`, `content_desc`, `hint` ╨╕╨╗╨╕ `type`; ╨┐╨╛╨┤╨┤╨╡╤А╨╢╨╕╨▓╨░╨╡╤В `exact` ╨╕ `contains` |
-| ╨Ю╨╢╨╕╨┤╨░╨╜╨╕╨╡ ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨░ | ╨Я╨╛╨▓╤В╨╛╤А╤П╨╡╤В UI dump ╨┤╨╛ ╨┐╨╛╤П╨▓╨╗╨╡╨╜╨╕╤П ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨░ ╨╕╨╗╨╕ ╨┤╨╛ timeout |
-| Detect state | ╨Ю╨┐╤А╨╡╨┤╨╡╨╗╤П╨╡╤В ╤Б╨╛╤Б╤В╨╛╤П╨╜╨╕╨╡ ╤Н╨║╤А╨░╨╜╨░ ╨┐╨╛ UI dump, ╨░ ╨▓ ╤А╨╡╨╢╨╕╨╝╨░╤Е `auto`/`vlm` ╨╝╨╛╨╢╨╡╤В ╨┤╨╛╨┐╨╛╨╗╨╜╤П╤В╤М ╤А╨╡╨╖╤Г╨╗╤М╤В╨░╤В VLM-╨░╨╜╨░╨╗╨╕╨╖╨╛╨╝ ╤Б╨║╤А╨╕╨╜╤И╨╛╤В╨░ |
-| Cache | ╨е╤А╨░╨╜╨╕╤В ╨┐╨╛╤Б╨╗╨╡╨┤╨╜╨╕╨╣ ╤Г╤Б╨┐╨╡╤И╨╜╤Л╨╣ screenshot/UI dump ╨▓ ╨┐╨░╨╝╤П╤В╨╕ ╤В╨╡╨║╤Г╤Й╨╡╨╣ observer-╤А╨╡╨┐╨╗╨╕╨║╨╕ ╨╕ ╤Г╨╝╨╡╨╡╤В ╨╛╤З╨╕╤Й╨░╤В╤М cache ╨┐╨╛ `serial` |
-| ╨Ю╤З╨╡╤А╨╡╨┤╨╕ ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓ | ╨Ф╨╗╤П ╨╛╨┤╨╜╨╛╨│╨╛ `serial` ╨▓╤Л╨┐╨╛╨╗╨╜╤П╨╡╤В ╨╖╨░╨┤╨░╤З╨╕ ╨┐╨╛╤Б╨╗╨╡╨┤╨╛╨▓╨░╤В╨╡╨╗╤М╨╜╨╛ ╤З╨╡╤А╨╡╨╖ worker; ╤А╨░╨╖╨╜╤Л╨╡ `serial` ╨╛╨▒╤А╨░╨▒╨░╤В╤Л╨▓╨░╤О╤В╤Б╤П ╨┐╨░╤А╨░╨╗╨╗╨╡╨╗╤М╨╜╨╛ |
-| Health/ready | `/health` ╨┐╤А╨╛╨▓╨╡╤А╤П╨╡╤В, ╤З╤В╨╛ HTTP-╤Б╨╡╤А╨▓╨╡╤А ╨╢╨╕╨▓; `/ready` ╨┐╤А╨╛╨▓╨╡╤А╤П╨╡╤В ╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╛╤Б╤В╤М storage ╤З╨╡╤А╨╡╨╖ `ObjectStorage.Ping` |
+| Скриншот | Получает PNG через ADB `exec-out screencap -p`, определяет размер изображения и сохраняет результат в MinIO или `NoopStorage` |
+| UI dump | Запускает `uiautomator dump`, читает XML с телефона и парсит элементы: `type`, `text`, `resource_id`, `content_desc`, `hint`, `bounds`, `center` |
+| Поиск элемента | Ищет один UI-элемент по `resource_id`, `text`, `content_desc`, `hint` или `type`; поддерживает `exact` и `contains` |
+| Ожидание элемента | Повторяет UI dump до появления элемента или до timeout |
+| Detect state | Определяет состояние экрана по UI dump, а в режимах `auto`/`vlm` может дополнять результат VLM-анализом скриншота |
+| Cache | Хранит последний успешный screenshot/UI dump в памяти текущей observer-реплики и умеет очищать cache по `serial` |
+| Очереди устройств | Для одного `serial` выполняет задачи последовательно через worker; разные `serial` обрабатываются параллельно |
+| Health/ready | `/health` проверяет, что HTTP-сервер жив; `/ready` проверяет доступность storage через `ObjectStorage.Ping` |
 
-### ╨Я╤Г╨▒╨╗╨╕╤З╨╜╤Л╨╡ ╨╝╨╡╤В╨╛╨┤╤Л
+### Публичные методы
 
-╨д╨░╨║╤В╨╕╤З╨╡╤Б╨║╨░╤П ╤А╨░╨▒╨╛╤З╨░╤П ╨┐╨╛╨▓╨╡╤А╤Е╨╜╨╛╤Б╤В╤М ╤Б╨╡╨╣╤З╨░╤Б тАФ HTTP API ╨╕ CLI-╨║╨╛╨╝╨░╨╜╨┤╤Л ╨╕╨╖ `cmd/*`.
+Фактическая рабочая поверхность сейчас — HTTP API и CLI-команды из `cmd/*`.
 
-| ╨Ь╨╡╤В╨╛╨┤ | Endpoint | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Метод | Endpoint | Назначение |
 |-------|----------|------------|
-| `GET` | `/health` | ╨Я╤А╨╛╨▓╨╡╤А╨╕╤В╤М, ╤З╤В╨╛ observer ╨╖╨░╨┐╤Г╤Й╨╡╨╜ |
-| `GET` | `/ready` | ╨Я╤А╨╛╨▓╨╡╤А╨╕╤В╤М ╨│╨╛╤В╨╛╨▓╨╜╨╛╤Б╤В╤М storage |
-| `POST` | `/screenshot` | ╨б╨┤╨╡╨╗╨░╤В╤М screenshot ╨╕ ╤Б╨╛╤Е╤А╨░╨╜╨╕╤В╤М ╨╡╨│╨╛ ╨▓ storage |
-| `POST` | `/dump-ui` | ╨Я╨╛╨╗╤Г╤З╨╕╤В╤М ╤Б╨▓╨╡╨╢╨╕╨╣ UI dump ╨▓ `json` ╨╕╨╗╨╕ `xml` |
-| `POST` | `/find-element` | ╨Э╨░╨╣╤В╨╕ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨╜╨░ ╤В╨╡╨║╤Г╤Й╨╡╨╝ ╤Н╨║╤А╨░╨╜╨╡ |
-| `POST` | `/wait-for-element` | ╨Ф╨╛╨╢╨┤╨░╤В╤М╤Б╤П ╨┐╨╛╤П╨▓╨╗╨╡╨╜╨╕╤П ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨░ |
-| `POST` | `/detect-state` | ╨Ю╨┐╤А╨╡╨┤╨╡╨╗╨╕╤В╤М ╤Б╨╛╤Б╤В╨╛╤П╨╜╨╕╨╡ ╤Н╨║╤А╨░╨╜╨░ ╨▓ ╤А╨╡╨╢╨╕╨╝╨╡ `ui`, `auto` ╨╕╨╗╨╕ `vlm` |
-| `GET` | `/screen/{serial}` | ╨б╨┤╨╡╨╗╨░╤В╤М ╤Б╨▓╨╡╨╢╨╕╨╣ screenshot ╤З╨╡╤А╨╡╨╖ worker ╨║╨╛╨╜╨║╤А╨╡╤В╨╜╨╛╨│╨╛ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ |
-| `GET` | `/ui/{serial}` | ╨б╨┤╨╡╨╗╨░╤В╤М ╤Б╨▓╨╡╨╢╨╕╨╣ UI dump ╤З╨╡╤А╨╡╨╖ worker ╨║╨╛╨╜╨║╤А╨╡╤В╨╜╨╛╨│╨╛ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ |
-| `DELETE` | `/cache/{serial}` | ╨Ю╤З╨╕╤Б╤В╨╕╤В╤М in-memory cache ╨┤╨╗╤П ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ |
+| `GET` | `/health` | Проверить, что observer запущен |
+| `GET` | `/ready` | Проверить готовность storage |
+| `POST` | `/screenshot` | Сделать screenshot и сохранить его в storage |
+| `POST` | `/dump-ui` | Получить свежий UI dump в `json` или `xml` |
+| `POST` | `/find-element` | Найти элемент на текущем экране |
+| `POST` | `/wait-for-element` | Дождаться появления элемента |
+| `POST` | `/detect-state` | Определить состояние экрана в режиме `ui`, `auto` или `vlm` |
+| `GET` | `/screen/{serial}` | Сделать свежий screenshot через worker конкретного телефона |
+| `GET` | `/ui/{serial}` | Сделать свежий UI dump через worker конкретного телефона |
+| `DELETE` | `/cache/{serial}` | Очистить in-memory cache для телефона |
 
-╨Т protobuf ╨╛╨┐╨╕╤Б╨░╨╜ gRPC-╤Б╨╡╤А╨▓╨╕╤Б `ObserverService` ╤Б RPC `CaptureScreenshot`, `DumpUI`, `DetectState` ╨▓ `proto/observer/v1/observer.proto`. ╨Э╨░ ╤В╨╡╨║╤Г╤Й╨╕╨╣ ╨╝╨╛╨╝╨╡╨╜╤В `ObserverHandler.Register` ╨╛╤Б╤В╨░╨▓╨╗╨╡╨╜ ╨║╨░╨║ no-op, ╨┐╨╛╤Н╤В╨╛╨╝╤Г protobuf-╨║╨╛╨╜╤В╤А╨░╨║╤В ╨╡╤Б╤В╤М, ╨╜╨╛ ╨┐╨╛╨╗╨╜╨╛╤Ж╨╡╨╜╨╜╨░╤П Go-╤А╨╡╨│╨╕╤Б╤В╤А╨░╤Ж╨╕╤П gRPC API ╨╡╤Й╤С ╨╜╨╡ ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜╨░.
+В protobuf описан gRPC-сервис `ObserverService` с RPC `CaptureScreenshot`, `DumpUI`, `DetectState` в `proto/observer/v1/observer.proto`. На текущий момент `ObserverHandler.Register` оставлен как no-op, поэтому protobuf-контракт есть, но полноценная Go-регистрация gRPC API ещё не завершена.
 
-### ╨Ъ╨╗╤О╤З╨╡╨▓╤Л╨╡ ╤Д╤Г╨╜╨║╤Ж╨╕╨╕ ╨╕ ╨╝╨╡╤В╨╛╨┤╤Л ╨▓ ╨║╨╛╨┤╨╡
+### Ключевые функции и методы в коде
 
-| ╨б╨╗╨╛╨╣ | ╨Ь╨╡╤В╨╛╨┤╤Л/╤Д╤Г╨╜╨║╤Ж╨╕╨╕ | ╨а╨╛╨╗╤М |
+| Слой | Методы/функции | Роль |
 |------|----------------|------|
-| `internal/config` | `Load`, `env`, `envInt`, `parseLogLevel` | ╨Ч╨░╨│╤А╤Г╨╢╨░╨╡╤В ╨░╨┤╤А╨╡╤Б╨░, MinIO, ╨╛╤З╨╡╤А╨╡╨┤╨╕, timeouts, VLM-╨╜╨░╤Б╤В╤А╨╛╨╣╨║╨╕ ╨╕ ╤Г╤А╨╛╨▓╨╡╨╜╤М ╨╗╨╛╨│╨╛╨▓ ╨╕╨╖ env |
-| `internal/domain` | `ParseUIDump`, `FindElement`, `ValidateFindElementQuery`, `DetectScreenFromUIDump`, `MergeScreenDetections`, `NormalizeVLMState` | ╨Я╨░╤А╤Б╨╕╤В UI XML, ╨╕╤Й╨╡╤В ╤Н╨╗╨╡╨╝╨╡╨╜╤В╤Л ╨╕ ╨║╨╗╨░╤Б╤Б╨╕╤Д╨╕╤Ж╨╕╤А╤Г╨╡╤В ╤Б╨╛╤Б╤В╨╛╤П╨╜╨╕╨╡ ╤Н╨║╤А╨░╨╜╨░ |
-| `internal/service` | `ObserveService.DumpUI`, `DumpUIDocument`, `DetectState` | ╨С╨╕╨╖╨╜╨╡╤Б-╨╗╨╛╨│╨╕╨║╨░ UI-╨╜╨░╨▒╨╗╤О╨┤╨╡╨╜╨╕╤П ╨┐╨╛╨▓╨╡╤А╤Е `port.UIDumper` |
-| `internal/service` | `ScreenshotService.Capture`, `CaptureAndStore` | ╨Я╨╛╨╗╤Г╤З╨░╨╡╤В screenshot ╤З╨╡╤А╨╡╨╖ ╨┐╨╛╤А╤В ╨╕ ╤Б╨╛╤Е╤А╨░╨╜╤П╨╡╤В PNG ╨▓ storage |
-| `internal/service` | `ObservationDispatcher.Capture`, `DumpUI`, `FindElement`, `WaitForElement`, `DetectState`, `CurrentScreen`, `CurrentUI`, `ClearCache` | ╨б╤В╨░╨▓╨╕╤В ╨╖╨░╨┤╨░╤З╨╕ ╨▓ per-serial worker, ╤Г╨┐╤А╨░╨▓╨╗╤П╨╡╤В priority-╨╛╤З╨╡╤А╨╡╨┤╤П╨╝╨╕ ╨╕ cache |
-| `internal/adapter/driver` | `UIAutomatorDriver.DumpUI`, `DetectState`, `Ping` | ╨а╨░╨▒╨╛╤В╨░╨╡╤В ╤Б ADB `uiautomator` ╨╕ ╨┐╤А╨╛╨▓╨╡╤А╤П╨╡╤В ADB |
-| `internal/adapter/driver` | `AdbScreenshotDriver.Capture` | ╨Я╨╛╨╗╤Г╤З╨░╨╡╤В PNG ╤З╨╡╤А╨╡╨╖ ADB ╨╕╨╗╨╕ stub PNG ╨┤╨╗╤П `serial=stub` |
-| `internal/adapter/driver` | `CascadingScreenAnalyzer.Analyze` | ╨Т╤Л╨╖╤Л╨▓╨░╨╡╤В VLM backends ╨┐╨╛ ╤Ж╨╡╨┐╨╛╤З╨║╨╡: VisionServer, Ollama, OpenAI-compatible API |
-| `internal/adapter/repository` | `MinIOStorage.Upload`, `Ping`, `NoopStorage.Upload`, `Ping` | ╨Ч╨░╨│╤А╤Г╨╢╨░╨╡╤В PNG ╨▓ MinIO ╨╕╨╗╨╕ ╨▓╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В noop-╤Б╤Б╤Л╨╗╨║╤Г ╨▒╨╡╨╖ ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ upload |
-| `internal/adapter/handler` | `HTTPHandler.Routes` ╨╕ ╨╛╨▒╤А╨░╨▒╨╛╤В╤З╨╕╨║╨╕ endpoint'╨╛╨▓ | ╨Я╤А╨╕╨╜╨╕╨╝╨░╨╡╤В HTTP-╨╖╨░╨┐╤А╨╛╤Б╤Л, ╨▓╨░╨╗╨╕╨┤╨╕╤А╤Г╨╡╤В ╨┐╨░╤А╨░╨╝╨╡╤В╤А╤Л ╨╕ ╨╝╨░╨┐╨┐╨╕╤В ╨┤╨╛╨╝╨╡╨╜╨╜╤Л╨╡ ╨╛╤И╨╕╨▒╨║╨╕ ╨▓ HTTP status |
+| `internal/config` | `Load`, `env`, `envInt`, `parseLogLevel` | Загружает адреса, MinIO, очереди, timeouts, VLM-настройки и уровень логов из env |
+| `internal/domain` | `ParseUIDump`, `FindElement`, `ValidateFindElementQuery`, `DetectScreenFromUIDump`, `MergeScreenDetections`, `NormalizeVLMState` | Парсит UI XML, ищет элементы и классифицирует состояние экрана |
+| `internal/service` | `ObserveService.DumpUI`, `DumpUIDocument`, `DetectState` | Бизнес-логика UI-наблюдения поверх `port.UIDumper` |
+| `internal/service` | `ScreenshotService.Capture`, `CaptureAndStore` | Получает screenshot через порт и сохраняет PNG в storage |
+| `internal/service` | `ObservationDispatcher.Capture`, `DumpUI`, `FindElement`, `WaitForElement`, `DetectState`, `CurrentScreen`, `CurrentUI`, `ClearCache` | Ставит задачи в per-serial worker, управляет priority-очередями и cache |
+| `internal/adapter/driver` | `UIAutomatorDriver.DumpUI`, `DetectState`, `Ping` | Работает с ADB `uiautomator` и проверяет ADB |
+| `internal/adapter/driver` | `AdbScreenshotDriver.Capture` | Получает PNG через ADB или stub PNG для `serial=stub` |
+| `internal/adapter/driver` | `CascadingScreenAnalyzer.Analyze` | Вызывает VLM backends по цепочке: VisionServer, Ollama, OpenAI-compatible API |
+| `internal/adapter/repository` | `MinIOStorage.Upload`, `Ping`, `NoopStorage.Upload`, `Ping` | Загружает PNG в MinIO или возвращает noop-ссылку без реального upload |
+| `internal/adapter/handler` | `HTTPHandler.Routes` и обработчики endpoint'ов | Принимает HTTP-запросы, валидирует параметры и маппит доменные ошибки в HTTP status |
 
-### ╨б╨▓╤П╨╖╤М ╤Б ╨┤╤А╤Г╨│╨╕╨╝╨╕ ╤Б╨╡╤А╨▓╨╕╤Б╨░╨╝╨╕ ╨╕ ╨╕╨╜╤Д╤А╨░╤Б╤В╤А╤Г╨║╤В╤Г╤А╨╛╨╣
+### Связь с другими сервисами и инфраструктурой
 
-| ╨Ъ╨╛╨╝╨┐╨╛╨╜╨╡╨╜╤В | ╨Ъ╨░╨║ ╤Б╨▓╤П╨╖╨░╨╜ |
+| Компонент | Как связан |
 |-----------|------------|
-| AF orchestrator/clients | ╨Т╤Л╨╖╤Л╨▓╨░╤О╤В observer, ╨║╨╛╨│╨┤╨░ ╨╜╤Г╨╢╨╜╨╛ ╨┐╨╛╨╜╤П╤В╤М, ╤З╤В╨╛ ╤Б╨╡╨╣╤З╨░╤Б ╨╜╨░ ╤Н╨║╤А╨░╨╜╨╡ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░, ╨┐╨╛╨╗╤Г╤З╨╕╤В╤М screenshot, UI dump, ╤Б╨╛╤Б╤В╨╛╤П╨╜╨╕╨╡ ╤Н╨║╤А╨░╨╜╨░ ╨╕╨╗╨╕ ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨░ |
-| phone-executor | ╨Ш╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В ╨┤╨░╨╜╨╜╤Л╨╡ observer ╨┤╨╗╤П ╨┤╨╡╨╣╤Б╤В╨▓╨╕╨╣: observer ╤В╨╛╨╗╤М╨║╨╛ ╨╜╨░╤Е╨╛╨┤╨╕╤В ╤Н╨╗╨╡╨╝╨╡╨╜╤В╤Л ╨╕ ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л, ╨░ tap/swipe/text ╨▓╤Л╨┐╨╛╨╗╨╜╤П╨╡╤В executor |
-| phone-connector | ╨Ю╤В╨▓╨╡╤З╨░╨╡╤В ╨╖╨░ ADB connect/forward; observer ╨╜╨╡ ╤Г╨┐╤А╨░╨▓╨╗╤П╨╡╤В ╨┐╨╛╨┤╨║╨╗╤О╤З╨╡╨╜╨╕╨╡╨╝, ╨░ ╤А╨░╨▒╨╛╤В╨░╨╡╤В ╤Б ╤Г╨╢╨╡ ╨┤╨╛╤Б╤В╤Г╨┐╨╜╤Л╨╝ ╨╗╨╛╨║╨░╨╗╤М╨╜╤Л╨╝ `adb -s {serial}` |
-| Android device | ╨Ш╤Б╤В╨╛╤З╨╜╨╕╨║ ╨┤╨░╨╜╨╜╤Л╤Е: `screencap -p` ╨┤╨╗╤П screenshot ╨╕ `uiautomator dump` ╨┤╨╗╤П UI XML |
-| MinIO | ╨е╤А╨░╨╜╨╕╨╗╨╕╤Й╨╡ PNG-╤Б╨║╤А╨╕╨╜╤И╨╛╤В╨╛╨▓; ╨┐╤А╨╕ ╨╜╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╛╤Б╤В╨╕ ╨╜╨░ ╤Б╤В╨░╤А╤В╨╡ ╤Б╨╡╤А╨▓╨╕╤Б ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В `NoopStorage` |
-| VisionServer/Ollama/OpenAI-compatible API | ╨Ю╨┐╤Ж╨╕╨╛╨╜╨░╨╗╤М╨╜╤Л╨╡ VLM backends ╨┤╨╗╤П ╨░╨╜╨░╨╗╨╕╨╖╨░ ╤Б╨║╤А╨╕╨╜╤И╨╛╤В╨╛╨▓ ╨▓ `detect-state` |
+| AF orchestrator/clients | Вызывают observer, когда нужно понять, что сейчас на экране телефона, получить screenshot, UI dump, состояние экрана или координаты элемента |
+| phone-executor | Использует данные observer для действий: observer только находит элементы и координаты, а tap/swipe/text выполняет executor |
+| phone-connector | Отвечает за ADB connect/forward; observer не управляет подключением, а работает с уже доступным локальным `adb -s {serial}` |
+| Android device | Источник данных: `screencap -p` для screenshot и `uiautomator dump` для UI XML |
+| MinIO | Хранилище PNG-скриншотов; при недоступности на старте сервис использует `NoopStorage` |
+| VisionServer/Ollama/OpenAI-compatible API | Опциональные VLM backends для анализа скриншотов в `detect-state` |
 
-## ╨в╤А╨╡╨▒╨╛╨▓╨░╨╜╨╕╤П
+## Требования
 
 - Go 1.25+;
 - `make`;
-- `adb` ╨┤╨╗╤П ╤А╨░╨▒╨╛╤В╤Л ╤Б ╤А╨╡╨░╨╗╤М╨╜╤Л╨╝ Android-╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨╛╨╝;
-- MinIO ╨┤╨╗╤П ╤Е╤А╨░╨╜╨╡╨╜╨╕╤П ╤Б╨║╤А╨╕╨╜╤И╨╛╤В╨╛╨▓, ╨╡╤Б╨╗╨╕ ╨╜╤Г╨╢╨╡╨╜ ╤А╨╡╨░╨╗╤М╨╜╤Л╨╣ upload;
-- `make lint` ╤Б╨░╨╝ ╨╖╨░╨┐╤Г╤Б╨║╨░╨╡╤В ╨╖╨░╨║╤А╨╡╨┐╨╗╤С╨╜╨╜╤Л╨╣ `golangci-lint v2.4.0` ╤З╨╡╤А╨╡╨╖ `go run`;
-- `protoc`, `protoc-gen-go`, `protoc-gen-go-grpc` ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П ╨│╨╡╨╜╨╡╤А╨░╤Ж╨╕╨╕ protobuf.
+- `adb` для работы с реальным Android-устройством;
+- MinIO для хранения скриншотов, если нужен реальный upload;
+- `make lint` сам запускает закреплённый `golangci-lint v2.4.0` через `go run`;
+- `protoc`, `protoc-gen-go`, `protoc-gen-go-grpc` только для генерации protobuf.
 
-## ╨С╤Л╤Б╤В╤А╤Л╨╣ ╤Б╤В╨░╤А╤В
+## Быстрый старт
 
 ```bash
+# MinIO (локально)
+docker compose -f deploy/docker-compose.yml up -d
+# или: .\deploy\start-minio.ps1
+
 make deps
 make check
 make run
 ```
 
-╨Я╨╛╤Б╨╗╨╡ ╨╖╨░╨┐╤Г╤Б╨║╨░:
+После запуска:
 
-- gRPC ╤Б╨╗╤Г╤И╨░╨╡╤В `GRPC_ADDR`, ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О `:50053`;
-- `make run` ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В dev HTTP endpoint `http://127.0.0.1:19090`;
-- health endpoint ╨┤╨╛╤Б╤В╤Г╨┐╨╡╨╜ ╨╜╨░ `http://127.0.0.1:19090/health`;
-- ready endpoint ╨┤╨╛╤Б╤В╤Г╨┐╨╡╨╜ ╨╜╨░ `http://127.0.0.1:19090/ready`.
+- gRPC слушает `GRPC_ADDR`, по умолчанию `:50053`;
+- `make run` использует dev HTTP endpoint `http://127.0.0.1:19090`;
+- health endpoint доступен на `http://127.0.0.1:19090/health`;
+- ready endpoint доступен на `http://127.0.0.1:19090/ready`.
 
-╨Я╤А╨╛╨▓╨╡╤А╨╕╤В╤М ╨┐╨╛╨┤╨║╨╗╤О╤З╤С╨╜╨╜╤Л╨╡ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╤Л:
+Проверить подключённые телефоны:
 
 ```bash
 make adb-devices
 make adb-serial
 ```
 
-╨Ю╤Б╨╜╨╛╨▓╨╜╨╛╨╣ ╤Б╤Ж╨╡╨╜╨░╤А╨╕╨╣ тАФ ╤А╨╡╨░╨╗╤М╨╜╤Л╨╣ ╤В╨╡╨╗╨╡╤Д╨╛╨╜, ╨┐╨╡╤А╨▓╤Л╨╣ `device` ╨╕╨╖ `adb devices`:
+Основной сценарий — реальный телефон, первый `device` из `adb devices`:
 
 ```bash
 make phone-screen
@@ -112,9 +116,9 @@ make phone-ui
 make phone-detect-state DETECT_MODE=ui
 ```
 
-╨Т╤Б╨╡ REST-╨║╨╛╨╝╨░╨╜╨┤╤Л ╨╕╨╖ Makefile ╨░╨▓╤В╨╛╨╝╨░╤В╨╕╤З╨╡╤Б╨║╨╕ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╤О╤В ╨┐╨╡╤А╨▓╤Л╨╣ ╨┐╨╛╨┤╨║╨╗╤О╤З╤С╨╜╨╜╤Л╨╣ ╤В╨╡╨╗╨╡╤Д╨╛╨╜ ╤З╨╡╤А╨╡╨╖ `PHONE_SERIAL`. ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨╛╨╜╨╕ ╤Е╨╛╨┤╤П╤В ╨╜╨░ `OBSERVER_HTTP_URL=http://127.0.0.1:19090`, ╤З╤В╨╛╨▒╤Л ╨╜╨╡ ╤Ж╨╡╨┐╨╗╤П╤В╤М╤Б╤П ╨╖╨░ ╤Б╤В╨░╤А╤Л╨╣ ╨┐╤А╨╛╤Ж╨╡╤Б╤Б ╨╜╨░ ╤Б╨╡╤А╨▓╨╕╤Б╨╜╨╛╨╝ ╨┐╨╛╤А╤В╤Г `9090`. ╨Х╤Б╨╗╨╕ ╨╗╨╛╨║╨░╨╗╤М╨╜╤Л╨╣ observer ╨╜╨░ `OBSERVER_HTTP_URL` ╨╜╨╡ ╨╖╨░╨┐╤Г╤Й╨╡╨╜, ╨║╨╛╨╝╨░╨╜╨┤╨░ ╨┐╨╛╨┤╨╜╨╕╨╝╨╡╤В ╨▓╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╣ `cmd/server`, ╨▓╤Л╨┐╨╛╨╗╨╜╨╕╤В ╨╖╨░╨┐╤А╨╛╤Б ╨╕ ╨╛╤Б╤В╨░╨╜╨╛╨▓╨╕╤В ╨╡╨│╨╛. ╨Ф╨╗╤П ╨╛╨▒╤А╨░╤Й╨╡╨╜╨╕╤П ╨║ ╤Г╨╢╨╡ ╨╖╨░╨┐╤Г╤Й╨╡╨╜╨╜╨╛╨╝╤Г ╨╕╨╗╨╕ ╤Г╨┤╨░╨╗╤С╨╜╨╜╨╛╨╝╤Г observer ╨╝╨╛╨╢╨╜╨╛ ╨╛╤В╨║╨╗╤О╤З╨╕╤В╤М ╤Н╤В╨╛ ╨┐╨╛╨▓╨╡╨┤╨╡╨╜╨╕╨╡ ╤З╨╡╤А╨╡╨╖ `OBSERVER_AUTO_START=false`.
+Все REST-команды из Makefile автоматически используют первый подключённый телефон через `PHONE_SERIAL`. По умолчанию они ходят на `OBSERVER_HTTP_URL=http://127.0.0.1:19090`, чтобы не цепляться за старый процесс на сервисном порту `9090`. Если локальный observer на `OBSERVER_HTTP_URL` не запущен, команда поднимет временный `cmd/server`, выполнит запрос и остановит его. Для обращения к уже запущенному или удалённому observer можно отключить это поведение через `OBSERVER_AUTO_START=false`.
 
-╨Я╨╛╨╗╨╜╤Л╨╣ ╨╜╨░╨▒╨╛╤А ╨║╨╛╨╝╨░╨╜╨┤ ╨┤╨╗╤П ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░:
+Полный набор команд для реального телефона:
 
 ```bash
 make phone-screenshot
@@ -127,7 +131,7 @@ make phone-wait-for-element WAIT_TEXT=OK
 make phone-detect-state DETECT_MODE=ui
 ```
 
-╨Ю╨▒╤Л╤З╨╜╤Л╨╡ ╨║╨╛╨╝╨░╨╜╨┤╤Л ╤В╨╛╨╢╨╡ ╤А╨░╨▒╨╛╤В╨░╤О╤В ╨▒╨╡╨╖ `SERIAL=...`, ╨┐╨╛╤В╨╛╨╝╤Г `SERIAL` ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╤А╨░╨▓╨╡╨╜ `PHONE_SERIAL`:
+Обычные команды тоже работают без `SERIAL=...`, потому `SERIAL` по умолчанию равен `PHONE_SERIAL`:
 
 ```bash
 make screenshot
@@ -138,28 +142,28 @@ make clear-cache
 make detect-state DETECT_MODE=ui
 ```
 
-╨Х╤Б╨╗╨╕ ╨╜╤Г╨╢╨╜╨╛ ╨▓╤Л╨▒╤А╨░╤В╤М ╨║╨╛╨╜╨║╤А╨╡╤В╨╜╤Л╨╣ ╤В╨╡╨╗╨╡╤Д╨╛╨╜, ╨┐╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╕ `PHONE_SERIAL` ╨╕╨╗╨╕ `SERIAL`:
+Если нужно выбрать конкретный телефон, переопредели `PHONE_SERIAL` или `SERIAL`:
 
 ```bash
 make phone-screen PHONE_SERIAL=R5GL2218DMR
 make screen SERIAL=R5GL2218DMR
 ```
 
-`GET /screen/{serial}` ╨╕ `GET /ui/{serial}` ╨┤╨╡╨╗╨░╤О╤В ╤Б╨▓╨╡╨╢╨╕╨╣ observation ╤З╨╡╤А╨╡╨╖ ╨╛╨▒╤Й╨╕╨╣ worker ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ ╨╕ ╨┐╨╛╤Б╨╗╨╡ ╤Г╤Б╨┐╨╡╤И╨╜╨╛╨│╨╛ ╤А╨╡╨╖╤Г╨╗╤М╤В╨░╤В╨░ ╨╛╨▒╨╜╨╛╨▓╨╗╤П╤О╤В in-memory cache observer. `DELETE /cache/{serial}` ╨╛╤З╨╕╤Й╨░╨╡╤В ╤В╨╛╨╗╤М╨║╨╛ ╤Н╤В╨╛╤В in-memory cache ╤В╨╡╨║╤Г╤Й╨╡╨╣ observer-╤А╨╡╨┐╨╗╨╕╨║╨╕; MinIO objects ╨╕ ╤Д╨░╨╣╨╗╤Л ╨╜╨░ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨╡ ╨╜╨╡ ╤Г╨┤╨░╨╗╤П╤О╤В╤Б╤П.
+`GET /screen/{serial}` и `GET /ui/{serial}` делают свежий observation через общий worker телефона и после успешного результата обновляют in-memory cache observer. `DELETE /cache/{serial}` очищает только этот in-memory cache текущей observer-реплики; MinIO objects и файлы на телефоне не удаляются.
 
-╨Э╨░╨╣╤В╨╕ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨╕╨╗╨╕ ╨┤╨╛╨╢╨┤╨░╤В╤М╤Б╤П ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨░ ╨╜╨░ ╤А╨╡╨░╨╗╤М╨╜╨╛╨╝ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨╡:
+Найти элемент или дождаться элемента на реальном телефоне:
 
 ```bash
-make phone-find-element FIND_TEXT=╨Т╨╛╨╣╤В╨╕
-make phone-find-element FIND_TEXT=╨▓╨╛╨╣╤В╨╕ FIND_MATCH=contains
+make phone-find-element FIND_TEXT=Войти
+make phone-find-element FIND_TEXT=войти FIND_MATCH=contains
 make phone-find-element FIND_RESOURCE_ID=com.app:id/login
-make phone-wait-for-element WAIT_TEXT=╨Ф╨░╨╗╨╡╨╡
+make phone-wait-for-element WAIT_TEXT=Далее
 make phone-wait-for-element WAIT_RESOURCE_ID=com.app:id/next WAIT_TIMEOUT_SEC=30 WAIT_CHECK_INTERVAL_MS=500
 ```
 
-`DETECT_MODE=ui` ╤З╨╕╤В╨░╨╡╤В ╤В╨╛╨╗╤М╨║╨╛ ╤Б╨▓╨╡╨╢╨╕╨╣ `uiautomator dump`. ╨Х╤Б╨╗╨╕ Android ╨╜╨╡ ╨╝╨╛╨╢╨╡╤В ╨╛╤В╨┤╨░╤В╤М dump ╨╜╨░ ╨┤╨╕╨╜╨░╨╝╨╕╤З╨╡╤Б╨║╨╛╨╝ ╤Н╨║╤А╨░╨╜╨╡, ╨╜╨░╨┐╤А╨╕╨╝╨╡╤А ╨╜╨░ ╨┐╨╛╤Б╤В╨╛╤П╨╜╨╜╨╛ ╨╝╨╡╨╜╤П╤О╤Й╨╡╨╝╤Б╤П ╨▓╨╕╨┤╨╡╨╛, ╨║╨╛╨╝╨░╨╜╨┤╨░ ╨▓╨╡╤А╨╜╤С╤В ╨╛╤И╨╕╨▒╨║╤Г `could not get idle state` ╨╕ ╨╜╨╡ ╨▒╤Г╨┤╨╡╤В ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╤М ╤Б╤В╨░╤А╤Л╨╣ XML. ╨Ф╨╗╤П ╨░╨╜╨░╨╗╨╕╨╖╨░ ╤В╨╡╨║╤Г╤Й╨╡╨│╨╛ ╨║╨░╨┤╤А╨░ ╨╜╤Г╨╢╨╡╨╜ `DETECT_MODE=auto` ╨╕╨╗╨╕ `DETECT_MODE=vlm` ╤Б ╨╜╨░╤Б╤В╤А╨╛╨╡╨╜╨╜╤Л╨╝ VLM backend.
+`DETECT_MODE=ui` читает только свежий `uiautomator dump`. Если Android не может отдать dump на динамическом экране, например на постоянно меняющемся видео, команда вернёт ошибку `could not get idle state` и не будет использовать старый XML. Для анализа текущего кадра нужен `DETECT_MODE=auto` или `DETECT_MODE=vlm` с настроенным VLM backend.
 
-`DETECT_PLATFORM` тАФ optional hint ╨┤╨╗╤П classifier/VLM. ╨Ю╤Б╨╜╨╛╨▓╨╜╨╛╨╣ ╤Б╤Ж╨╡╨╜╨░╤А╨╕╨╣ ╨╜╨╡ ╨┐╤А╨╕╨▓╤П╨╖╨░╨╜ ╨║ ╨║╨╛╨╜╨║╤А╨╡╤В╨╜╨╛╨╝╤Г ╨┐╤А╨╕╨╗╨╛╨╢╨╡╨╜╨╕╤О:
+`DETECT_PLATFORM` — optional hint для classifier/VLM. Основной сценарий не привязан к конкретному приложению:
 
 ```bash
 make phone-detect-state DETECT_MODE=ui DETECT_PLATFORM=android
@@ -167,9 +171,9 @@ make phone-detect-state DETECT_MODE=auto DETECT_PLATFORM=instagram
 make phone-detect-state DETECT_MODE=vlm DETECT_PLATFORM=tiktok
 ```
 
-## ╨Ы╨╛╨║╨░╨╗╤М╨╜╨░╤П ╨┐╤А╨╛╨▓╨╡╤А╨║╨░ ╨▒╨╡╨╖ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░
+## Локальная проверка без телефона
 
-╨Ф╨╗╤П ╨╗╨╛╨║╨░╨╗╤М╨╜╨╛╨╣ ╨┐╤А╨╛╨▓╨╡╤А╨║╨╕ ╨▒╨╡╨╖ ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ ╨╝╨╛╨╢╨╜╨╛ ╤П╨▓╨╜╨╛ ╤Г╨║╨░╨╖╨░╤В╤М stub-╨┤╤А╨░╨╣╨▓╨╡╤А:
+Для локальной проверки без реального телефона можно явно указать stub-драйвер:
 
 ```bash
 make screenshot SERIAL=stub
@@ -182,30 +186,30 @@ make wait-for-element SERIAL=stub WAIT_TEXT=OK
 make detect-state SERIAL=stub DETECT_MODE=ui
 ```
 
-`SERIAL=stub` ╨╜╨╡ ╤Б╨╝╨╛╤В╤А╨╕╤В ╨╜╨░ ╨┐╨╛╨┤╨║╨╗╤О╤З╤С╨╜╨╜╤Л╨╣ ╤В╨╡╨╗╨╡╤Д╨╛╨╜ ╨╕ ╨╜╤Г╨╢╨╡╨╜ ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П ╤В╨╡╤Б╤В╨╛╨▓/╨╗╨╛╨║╨░╨╗╤М╨╜╨╛╨│╨╛ smoke.
+`SERIAL=stub` не смотрит на подключённый телефон и нужен только для тестов/локального smoke.
 
 ## Detect State / VLM setup
 
-`POST /detect-state` ╤А╨░╨▒╨╛╤В╨░╨╡╤В ╨▓ ╤В╤А╤С╤Е ╤А╨╡╨╢╨╕╨╝╨░╤Е:
+`POST /detect-state` работает в трёх режимах:
 
-| Mode | ╨з╤В╨╛ ╨┤╨╡╨╗╨░╨╡╤В | ╨з╤В╨╛ ╨╜╤Г╨╢╨╜╨╛ ╤Г╤Б╤В╨░╨╜╨╛╨▓╨╕╤В╤М |
+| Mode | Что делает | Что нужно установить |
 |------|------------|----------------------|
-| `ui` | ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В ╤В╨╛╨╗╤М╨║╨╛ `uiautomator dump` ╨╕ rule-based ╨┐╤А╨╕╨╖╨╜╨░╨║╨╕ | Go, `adb` ╨▓ PATH, ╨░╨▓╤В╨╛╤А╨╕╨╖╨╛╨▓╨░╨╜╨╜╤Л╨╣ Android-╤В╨╡╨╗╨╡╤Д╨╛╨╜ |
-| `auto` | ╤Б╨╜╨░╤З╨░╨╗╨░ UI rules, ╨╖╨░╤В╨╡╨╝ VLM, ╨╡╤Б╨╗╨╕ ╨╜╨░╤Б╤В╤А╨╛╨╡╨╜ backend | ╤В╨╛ ╨╢╨╡, ╨┐╨╗╤О╤Б ╨╛╨┤╨╕╨╜ ╨╕╨╖ VLM backend ╨╜╨╕╨╢╨╡ |
-| `vlm` | ╤В╤А╨╡╨▒╤Г╨╡╤В screenshot ╨╕ ╤А╨░╨▒╨╛╤З╨╕╨╣ VLM backend | ╤В╨╛ ╨╢╨╡, ╨┐╨╗╤О╤Б ╨╛╨┤╨╕╨╜ ╨╕╨╖ VLM backend ╨╜╨╕╨╢╨╡ |
+| `ui` | использует только `uiautomator dump` и rule-based признаки | Go, `adb` в PATH, авторизованный Android-телефон |
+| `auto` | сначала UI rules, затем VLM, если настроен backend | то же, плюс один из VLM backend ниже |
+| `vlm` | требует screenshot и рабочий VLM backend | то же, плюс один из VLM backend ниже |
 
-╨Х╤Б╨╗╨╕ VLM ╨╜╨╡ ╨╜╨░╤Б╤В╤А╨╛╨╡╨╜, `DETECT_MODE=auto` ╨▓╤Б╤С ╤А╨░╨▓╨╜╨╛ ╨▓╨╡╤А╨╜╤С╤В ╤А╨╡╨╖╤Г╨╗╤М╤В╨░╤В ╨┐╨╛ UI dump. `DETECT_MODE=vlm` ╨▒╨╡╨╖ VLM backend ╨▓╨╡╤А╨╜╤С╤В `503`.
+Если VLM не настроен, `DETECT_MODE=auto` всё равно вернёт результат по UI dump. `DETECT_MODE=vlm` без VLM backend вернёт `503`.
 
-╨Ы╨╛╨║╨░╨╗╤М╨╜╤Л╨╣ VLM ╤З╨╡╤А╨╡╨╖ Ollama:
+Локальный VLM через Ollama:
 
 ```bash
 ollama pull qwen2.5vl:7b
 ollama serve
 ```
 
-╨Ф╨╗╤П `qwen2.5vl` ╨╜╤Г╨╢╨╡╨╜ Ollama `0.7.0` ╨╕╨╗╨╕ ╨╜╨╛╨▓╨╡╨╡.
+Для `qwen2.5vl` нужен Ollama `0.7.0` или новее.
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╨┤╨╗╤П observer:
+Переменные для observer:
 
 ```bash
 VLM_BACKENDS=ollama
@@ -213,7 +217,7 @@ OLLAMA_URL=http://localhost:11434
 OLLAMA_VLM_MODEL=qwen2.5vl:7b
 ```
 
-╨Х╤Б╨╗╨╕ ╤Г╨╢╨╡ ╨┐╨╛╨┤╨╜╤П╤В VisionServer ╨╕╨╖ `server-144`:
+Если уже поднят VisionServer из `server-144`:
 
 ```bash
 VLM_BACKENDS=vision_server,ollama,openai
@@ -228,7 +232,7 @@ OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-5.4-mini
 ```
 
-╨Я╨╛╨╗╨╡╨╖╨╜╤Л╨╡ ╤Б╤Б╤Л╨╗╨║╨╕:
+Полезные ссылки:
 
 - Ollama install: https://ollama.com/download
 - Ollama `qwen2.5vl`: https://ollama.com/library/qwen2.5vl
@@ -237,41 +241,41 @@ OPENAI_MODEL=gpt-5.4-mini
 
 ## Makefile
 
-| ╨Ъ╨╛╨╝╨░╨╜╨┤╨░ | ╨з╤В╨╛ ╨┤╨╡╨╗╨░╨╡╤В |
+| Команда | Что делает |
 |---------|------------|
-| `make deps` | ╤Б╨║╨░╤З╨╕╨▓╨░╨╡╤В Go-╨╖╨░╨▓╨╕╤Б╨╕╨╝╨╛╤Б╤В╨╕ ╤З╨╡╤А╨╡╨╖ `go mod download` |
-| `make tidy` | ╤Б╨╕╨╜╤Е╤А╨╛╨╜╨╕╨╖╨╕╤А╤Г╨╡╤В `go.mod` ╨╕ `go.sum` |
-| `make fmt` | ╤Д╨╛╤А╨╝╨░╤В╨╕╤А╤Г╨╡╤В Go-╨║╨╛╨┤ ╤З╨╡╤А╨╡╨╖ `go fmt ./...` |
-| `make vet` | ╨╖╨░╨┐╤Г╤Б╨║╨░╨╡╤В `go vet ./...` |
-| `make test` | ╨╖╨░╨┐╤Г╤Б╨║╨░╨╡╤В unit-╤В╨╡╤Б╤В╤Л |
-| `make lint` | ╨╖╨░╨┐╤Г╤Б╨║╨░╨╡╤В `golangci-lint run ./...` |
-| `make lint-fix` | ╨╖╨░╨┐╤Г╤Б╨║╨░╨╡╤В `golangci-lint run --fix ./...` |
-| `make build` | ╨┐╤А╨╛╨▓╨╡╤А╤П╨╡╤В ╤Б╨▒╨╛╤А╨║╤Г ╨▓╤Б╨╡╤Е Go-╨┐╨░╨║╨╡╤В╨╛╨▓ ╨▒╨╡╨╖ ╤Б╨╛╨╖╨┤╨░╨╜╨╕╤П ╨▒╨╕╨╜╨░╤А╨╜╨╕╨║╨░ |
-| `make build-bin` | ╤Б╨╛╨▒╨╕╤А╨░╨╡╤В ╨╗╨╛╨║╨░╨╗╤М╨╜╤Л╨╣ ╨▒╨╕╨╜╨░╤А╨╜╨╕╨║ `phone-observer` ╨╕╨╗╨╕ `phone-observer.exe` |
-| `make run` | ╨╖╨░╨┐╤Г╤Б╨║╨░╨╡╤В ╤Б╨╡╤А╨▓╨╕╤Б ╨╕╨╖ `./cmd/server` |
-| `make adb-devices` | ╨┐╨╛╨║╨░╨╖╤Л╨▓╨░╨╡╤В ╨▓╤Л╨▓╨╛╨┤ `adb devices` |
-| `make adb-serial` | ╨┐╨╡╤З╨░╤В╨░╨╡╤В ╨┐╨╡╤А╨▓╤Л╨╣ serial ╤Б╨╛ ╤Б╤В╨░╤В╤Г╤Б╨╛╨╝ `device` |
-| `make phone-screenshot` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /screenshot` ╨┤╨╗╤П ╨┐╨╡╤А╨▓╨╛╨│╨╛ ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ ADB-╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ |
-| `make phone-dump-ui` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /dump-ui` ╨┤╨╗╤П ╨┐╨╡╤А╨▓╨╛╨│╨╛ ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ ADB-╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ |
-| `make phone-screen` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `GET /screen/{serial}` ╨┤╨╗╤П ╨┐╨╡╤А╨▓╨╛╨│╨╛ ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ ADB-╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ |
-| `make phone-ui` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `GET /ui/{serial}` ╨┤╨╗╤П ╨┐╨╡╤А╨▓╨╛╨│╨╛ ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ ADB-╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ |
-| `make phone-clear-cache` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `DELETE /cache/{serial}` ╨┤╨╗╤П ╨┐╨╡╤А╨▓╨╛╨│╨╛ ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ ADB-╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ |
-| `make phone-find-element` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /find-element`; ╨╜╤Г╨╢╨╡╨╜ ╨╛╨┤╨╕╨╜ `FIND_*` ╤Б╨╡╨╗╨╡╨║╤В╨╛╤А |
-| `make phone-wait-for-element` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /wait-for-element`; ╨╜╤Г╨╢╨╡╨╜ ╨╛╨┤╨╕╨╜ `WAIT_*` ╤Б╨╡╨╗╨╡╨║╤В╨╛╤А |
-| `make phone-detect-state` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /detect-state` ╨┤╨╗╤П ╨┐╨╡╤А╨▓╨╛╨│╨╛ ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ ADB-╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ |
-| `make screenshot` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /screenshot`; ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В `PHONE_SERIAL` |
-| `make dump-ui` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /dump-ui`; ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В `PHONE_SERIAL` |
-| `make screen` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `GET /screen/{serial}`; ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В `PHONE_SERIAL` |
-| `make ui` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `GET /ui/{serial}`; ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В `PHONE_SERIAL` |
-| `make clear-cache` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `DELETE /cache/{serial}`; ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В `PHONE_SERIAL` |
-| `make find-element` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /find-element`; ╨╜╤Г╨╢╨╡╨╜ ╨╛╨┤╨╕╨╜ `FIND_*` ╤Б╨╡╨╗╨╡╨║╤В╨╛╤А |
-| `make wait-for-element` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /wait-for-element`; ╨╜╤Г╨╢╨╡╨╜ ╨╛╨┤╨╕╨╜ `WAIT_*` ╤Б╨╡╨╗╨╡╨║╤В╨╛╤А |
-| `make detect-state` | ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В `POST /detect-state`; ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В `PHONE_SERIAL` |
-| `make check` | ╨╖╨░╨┐╤Г╤Б╨║╨░╨╡╤В `vet`, `test`, `build` |
-| `make proto` | ╨│╨╡╨╜╨╡╤А╨╕╤А╤Г╨╡╤В Go-╨║╨╛╨┤ ╨╕╨╖ ╤Д╨░╨╣╨╗╨╛╨▓ `proto/**/*.proto` |
-| `make docker-build` | ╤Б╨╛╨▒╨╕╤А╨░╨╡╤В Docker-╨╛╨▒╤А╨░╨╖ `af-phone-observer:latest` |
+| `make deps` | скачивает Go-зависимости через `go mod download` |
+| `make tidy` | синхронизирует `go.mod` и `go.sum` |
+| `make fmt` | форматирует Go-код через `go fmt ./...` |
+| `make vet` | запускает `go vet ./...` |
+| `make test` | запускает unit-тесты |
+| `make lint` | запускает `golangci-lint run ./...` |
+| `make lint-fix` | запускает `golangci-lint run --fix ./...` |
+| `make build` | проверяет сборку всех Go-пакетов без создания бинарника |
+| `make build-bin` | собирает локальный бинарник `phone-observer` или `phone-observer.exe` |
+| `make run` | запускает сервис из `./cmd/server` |
+| `make adb-devices` | показывает вывод `adb devices` |
+| `make adb-serial` | печатает первый serial со статусом `device` |
+| `make phone-screenshot` | вызывает `POST /screenshot` для первого реального ADB-телефона |
+| `make phone-dump-ui` | вызывает `POST /dump-ui` для первого реального ADB-телефона |
+| `make phone-screen` | вызывает `GET /screen/{serial}` для первого реального ADB-телефона |
+| `make phone-ui` | вызывает `GET /ui/{serial}` для первого реального ADB-телефона |
+| `make phone-clear-cache` | вызывает `DELETE /cache/{serial}` для первого реального ADB-телефона |
+| `make phone-find-element` | вызывает `POST /find-element`; нужен один `FIND_*` селектор |
+| `make phone-wait-for-element` | вызывает `POST /wait-for-element`; нужен один `WAIT_*` селектор |
+| `make phone-detect-state` | вызывает `POST /detect-state` для первого реального ADB-телефона |
+| `make screenshot` | вызывает `POST /screenshot`; по умолчанию использует `PHONE_SERIAL` |
+| `make dump-ui` | вызывает `POST /dump-ui`; по умолчанию использует `PHONE_SERIAL` |
+| `make screen` | вызывает `GET /screen/{serial}`; по умолчанию использует `PHONE_SERIAL` |
+| `make ui` | вызывает `GET /ui/{serial}`; по умолчанию использует `PHONE_SERIAL` |
+| `make clear-cache` | вызывает `DELETE /cache/{serial}`; по умолчанию использует `PHONE_SERIAL` |
+| `make find-element` | вызывает `POST /find-element`; нужен один `FIND_*` селектор |
+| `make wait-for-element` | вызывает `POST /wait-for-element`; нужен один `WAIT_*` селектор |
+| `make detect-state` | вызывает `POST /detect-state`; по умолчанию использует `PHONE_SERIAL` |
+| `make check` | запускает `vet`, `test`, `build` |
+| `make proto` | генерирует Go-код из файлов `proto/**/*.proto` |
+| `make docker-build` | собирает Docker-образ `af-phone-observer:latest` |
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╨╝╨╛╨╢╨╜╨╛ ╨┐╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╤П╤В╤М ╨┐╤А╨╕ ╨╖╨░╨┐╤Г╤Б╨║╨╡:
+Переменные можно переопределять при запуске:
 
 ```bash
 make build-bin BINARY=observer-local
@@ -295,149 +299,149 @@ make detect-state SERIAL=stub DETECT_MODE=ui OBSERVER_HTTP_URL=http://127.0.0.1:
 make dump-ui SERIAL=stub OBSERVER_AUTO_START=false
 ```
 
-## ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╨╛╨║╤А╤Г╨╢╨╡╨╜╨╕╤П
+## Переменные окружения
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `GRPC_ADDR` | `:50053` | ╨░╨┤╤А╨╡╤Б gRPC-╤Б╨╡╤А╨▓╨╡╤А╨░ |
-| `HEALTH_ADDR` | `:9090` | ╨░╨┤╤А╨╡╤Б HTTP health/ready ╤Б╨╡╤А╨▓╨╡╤А╨░; `make run` ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨┐╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╤П╨╡╤В ╨╜╨░ `127.0.0.1:19090` |
-| `MINIO_ENDPOINT` | `localhost:9000` | ╨░╨┤╤А╨╡╤Б MinIO |
-| `MINIO_ACCESS_KEY` | `minioadmin` | access key ╨┤╨╗╤П MinIO |
-| `MINIO_SECRET_KEY` | `minioadmin` | secret key ╨┤╨╗╤П MinIO |
-| `MINIO_BUCKET` | `af-screenshots` | bucket ╨┤╨╗╤П PNG-╤Б╨║╤А╨╕╨╜╤И╨╛╤В╨╛╨▓ |
-| `MINIO_USE_SSL` | `false` | ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╤М HTTPS ╨┤╨╗╤П MinIO |
-| `SCREENSHOT_TMP_DIR` | OS temp | ╨┤╨╕╤А╨╡╨║╤В╨╛╤А╨╕╤П ╨┤╨╗╤П ╨▓╤А╨╡╨╝╨╡╨╜╨╜╤Л╤Е ╤Д╨░╨╣╨╗╨╛╨▓ |
-| `SCREENSHOT_TIMEOUT_SEC` | `10` | timeout ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨┤╨╗╤П REST screenshot ╨╕ `make screenshot` |
-| `DUMP_UI_TIMEOUT_SEC` | `30` | timeout ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨┤╨╗╤П REST dump-ui ╨╕ `make dump-ui` |
-| `SCREENSHOT_QUEUE_SIZE` | `32` | ╤А╨░╨╖╨╝╨╡╤А normal-╨╛╤З╨╡╤А╨╡╨┤╨╕ ╨╛╨▒╤Й╨╡╨│╨╛ worker ╨╜╨░ ╨╛╨┤╨╕╨╜ ╤В╨╡╨╗╨╡╤Д╨╛╨╜ |
-| `SCREENSHOT_HIGH_QUEUE_SIZE` | `8` | ╤А╨░╨╖╨╝╨╡╤А high-╨╛╤З╨╡╤А╨╡╨┤╨╕ ╨╛╨▒╤Й╨╡╨│╨╛ worker ╨╜╨░ ╨╛╨┤╨╕╨╜ ╤В╨╡╨╗╨╡╤Д╨╛╨╜ |
-| `VLM_BACKENDS` | ╨┐╤Г╤Б╤В╨╛ | ╤Б╨┐╨╕╤Б╨╛╨║ VLM backend ╤З╨╡╤А╨╡╨╖ ╨╖╨░╨┐╤П╤В╤Г╤О: `vision_server`, `ollama`, `openai` |
-| `VISION_SERVER_URL` | ╨┐╤Г╤Б╤В╨╛ | URL VisionServer ╨╕╨╖ `server-144`, ╨╜╨░╨┐╤А╨╕╨╝╨╡╤А `http://localhost:8000` |
-| `OLLAMA_URL` | `http://localhost:11434` | URL ╨╗╨╛╨║╨░╨╗╤М╨╜╨╛╨│╨╛ Ollama |
-| `OLLAMA_VLM_MODEL` | `qwen2.5vl:7b` | ╨╝╨╛╨┤╨╡╨╗╤М Ollama ╨┤╨╗╤П screenshot-╨░╨╜╨░╨╗╨╕╨╖╨░ |
-| `OPENAI_API_KEY` | ╨┐╤Г╤Б╤В╨╛ | ╨║╨╗╤О╤З OpenAI ╨┤╨╗╤П fallback vision-╨░╨╜╨░╨╗╨╕╨╖╨░ |
+| `GRPC_ADDR` | `:50053` | адрес gRPC-сервера |
+| `HEALTH_ADDR` | `:9090` | адрес HTTP health/ready сервера; `make run` по умолчанию переопределяет на `127.0.0.1:19090` |
+| `MINIO_ENDPOINT` | `localhost:9000` | адрес MinIO |
+| `MINIO_ACCESS_KEY` | `minioadmin` | access key для MinIO |
+| `MINIO_SECRET_KEY` | `minioadmin` | secret key для MinIO |
+| `MINIO_BUCKET` | `af-screenshots` | bucket для PNG-скриншотов |
+| `MINIO_USE_SSL` | `false` | использовать HTTPS для MinIO |
+| `SCREENSHOT_TMP_DIR` | OS temp | директория для временных файлов |
+| `SCREENSHOT_TIMEOUT_SEC` | `10` | timeout по умолчанию для REST screenshot и `make screenshot` |
+| `DUMP_UI_TIMEOUT_SEC` | `30` | timeout по умолчанию для REST dump-ui и `make dump-ui` |
+| `SCREENSHOT_QUEUE_SIZE` | `32` | размер normal-очереди общего worker на один телефон |
+| `SCREENSHOT_HIGH_QUEUE_SIZE` | `8` | размер high-очереди общего worker на один телефон |
+| `VLM_BACKENDS` | пусто | список VLM backend через запятую: `vision_server`, `ollama`, `openai` |
+| `VISION_SERVER_URL` | пусто | URL VisionServer из `server-144`, например `http://localhost:8000` |
+| `OLLAMA_URL` | `http://localhost:11434` | URL локального Ollama |
+| `OLLAMA_VLM_MODEL` | `qwen2.5vl:7b` | модель Ollama для screenshot-анализа |
+| `OPENAI_API_KEY` | пусто | ключ OpenAI для fallback vision-анализа |
 | `OPENAI_BASE_URL` | `https://api.openai.com/v1` | base URL OpenAI-compatible API |
-| `OPENAI_MODEL` | `gpt-5.4-mini` | ╨╝╨╛╨┤╨╡╨╗╤М OpenAI ╨┤╨╗╤П image input |
-| `VLM_TIMEOUT_SEC` | `20` | timeout ╨╛╨┤╨╜╨╛╨│╨╛ VLM-╨░╨╜╨░╨╗╨╕╨╖╨░ |
-| `VLM_MAX_CONCURRENCY` | `2` | ╨╝╨░╨║╤Б╨╕╨╝╤Г╨╝ ╨╛╨┤╨╜╨╛╨▓╤А╨╡╨╝╨╡╨╜╨╜╤Л╤Е VLM-╨╖╨░╨┐╤А╨╛╤Б╨╛╨▓ ╨╜╨░ observer |
+| `OPENAI_MODEL` | `gpt-5.4-mini` | модель OpenAI для image input |
+| `VLM_TIMEOUT_SEC` | `20` | timeout одного VLM-анализа |
+| `VLM_MAX_CONCURRENCY` | `2` | максимум одновременных VLM-запросов на observer |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
-| `GOLANGCI_LINT_VERSION` | `v2.4.0` | ╨▓╨╡╤А╤Б╨╕╤П `golangci-lint`, ╨║╨╛╤В╨╛╤А╤Г╤О ╨╖╨░╨┐╤Г╤Б╨║╨░╨╡╤В `make lint` |
+| `GOLANGCI_LINT_VERSION` | `v2.4.0` | версия `golangci-lint`, которую запускает `make lint` |
 
-╨Ю╨▒╤Й╨╕╨╡ ╨┐╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╨┤╨╗╤П REST-╨║╨╛╨╝╨░╨╜╨┤ `make phone-*`, `make screenshot`, `make dump-ui`, `make screen`, `make ui`, `make clear-cache`, `make find-element`, `make wait-for-element`, `make detect-state`:
+Общие переменные для REST-команд `make phone-*`, `make screenshot`, `make dump-ui`, `make screen`, `make ui`, `make clear-cache`, `make find-element`, `make wait-for-element`, `make detect-state`:
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `PHONE_SERIAL` | ╨┐╨╡╤А╨▓╤Л╨╣ `adb devices` ╤Б╨╛ ╤Б╤В╨░╤В╤Г╤Б╨╛╨╝ `device` | serial ╨╛╤Б╨╜╨╛╨▓╨╜╨╛╨│╨╛ ╤А╨╡╨░╨╗╤М╨╜╨╛╨│╨╛ ╤В╨╡╨╗╨╡╤Д╨╛╨╜╨░ ╨┤╨╗╤П `make phone-*` |
-| `SERIAL` | `$(PHONE_SERIAL)` | serial ╨┤╨╗╤П ╨╛╨▒╤Л╤З╨╜╤Л╤Е ╨║╨╛╨╝╨░╨╜╨┤; ╨┐╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╕ ╨╜╨░ `stub` ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П ╨╗╨╛╨║╨░╨╗╤М╨╜╨╛╨╣ ╨┐╤А╨╛╨▓╨╡╤А╨║╨╕ |
-| `OBSERVER_HTTP_ADDR` | `127.0.0.1:19090` | dev HTTP address ╨┤╨╗╤П `make run` ╨╕ REST-╨║╨╛╨╝╨░╨╜╨┤ |
-| `OBSERVER_HTTP_URL` | `http://$(OBSERVER_HTTP_ADDR)` | HTTP-╨░╨┤╤А╨╡╤Б observer ╨┤╨╗╤П CLI-╨║╨╛╨╝╨░╨╜╨┤ |
-| `OBSERVER_AUTO_START` | `true` | ╨┤╨╗╤П ╨╗╨╛╨║╨░╨╗╤М╨╜╨╛╨│╨╛ URL ╨░╨▓╤В╨╛╨╝╨░╤В╨╕╤З╨╡╤Б╨║╨╕ ╨┐╨╛╨┤╨╜╤П╤В╤М ╨▓╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╣ observer, ╨╡╤Б╨╗╨╕ ╨╛╨╜ ╨╜╨╡ ╨╖╨░╨┐╤Г╤Й╨╡╨╜ |
+| `PHONE_SERIAL` | первый `adb devices` со статусом `device` | serial основного реального телефона для `make phone-*` |
+| `SERIAL` | `$(PHONE_SERIAL)` | serial для обычных команд; переопредели на `stub` только для локальной проверки |
+| `OBSERVER_HTTP_ADDR` | `127.0.0.1:19090` | dev HTTP address для `make run` и REST-команд |
+| `OBSERVER_HTTP_URL` | `http://$(OBSERVER_HTTP_ADDR)` | HTTP-адрес observer для CLI-команд |
+| `OBSERVER_AUTO_START` | `true` | для локального URL автоматически поднять временный observer, если он не запущен |
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П `make screenshot`:
+Переменные только для `make screenshot`:
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `SCREENSHOT_PRIORITY` | `normal` | `normal` ╨╕╨╗╨╕ `high` |
-| `SCREENSHOT_STORE_IN_MINIO` | `true` | ╨┤╨╛╨╗╨╢╨╡╨╜ ╨╛╤Б╤В╨░╨▓╨░╤В╤М╤Б╤П `true`, ╨┐╤А╤П╨╝╨╛╨╣ endpoint ╤Б╨╡╨╣╤З╨░╤Б ╤Б╨╛╤Е╤А╨░╨╜╤П╨╡╤В PNG ╨▓ MinIO |
+| `SCREENSHOT_PRIORITY` | `normal` | `normal` или `high` |
+| `SCREENSHOT_STORE_IN_MINIO` | `true` | должен оставаться `true`, прямой endpoint сейчас сохраняет PNG в MinIO |
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П `make dump-ui`:
+Переменные только для `make dump-ui`:
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `DUMP_UI_FORMAT` | `json` | ╤Д╨╛╤А╨╝╨░╤В ╨╛╤В╨▓╨╡╤В╨░: `json` ╨╕╨╗╨╕ `xml` |
-| `DUMP_UI_PRIORITY` | `normal` | `normal` ╨╕╨╗╨╕ `high` |
-| `DUMP_UI_TIMEOUT_SEC` | `30` | timeout ╨╖╨░╨┐╤А╨╛╤Б╨░ ╨▓ ╤Б╨╡╨║╤Г╨╜╨┤╨░╤Е |
+| `DUMP_UI_FORMAT` | `json` | формат ответа: `json` или `xml` |
+| `DUMP_UI_PRIORITY` | `normal` | `normal` или `high` |
+| `DUMP_UI_TIMEOUT_SEC` | `30` | timeout запроса в секундах |
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П `make screen`:
+Переменные только для `make screen`:
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `SCREEN_PRIORITY` | `normal` | `normal` ╨╕╨╗╨╕ `high` |
-| `SCREEN_TIMEOUT_SEC` | `10` | timeout ╨╖╨░╨┐╤А╨╛╤Б╨░ ╨▓ ╤Б╨╡╨║╤Г╨╜╨┤╨░╤Е |
+| `SCREEN_PRIORITY` | `normal` | `normal` или `high` |
+| `SCREEN_TIMEOUT_SEC` | `10` | timeout запроса в секундах |
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П `make ui`:
+Переменные только для `make ui`:
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `UI_FORMAT` | `json` | ╤Д╨╛╤А╨╝╨░╤В ╨╛╤В╨▓╨╡╤В╨░: `json` ╨╕╨╗╨╕ `xml` |
-| `UI_PRIORITY` | `normal` | `normal` ╨╕╨╗╨╕ `high` |
-| `UI_TIMEOUT_SEC` | `30` | timeout ╨╖╨░╨┐╤А╨╛╤Б╨░ ╨▓ ╤Б╨╡╨║╤Г╨╜╨┤╨░╤Е |
+| `UI_FORMAT` | `json` | формат ответа: `json` или `xml` |
+| `UI_PRIORITY` | `normal` | `normal` или `high` |
+| `UI_TIMEOUT_SEC` | `30` | timeout запроса в секундах |
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П `make clear-cache`:
+Переменные только для `make clear-cache`:
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `CACHE_PRIORITY` | `high` | `normal` ╨╕╨╗╨╕ `high` |
-| `CACHE_TIMEOUT_SEC` | `5` | timeout ╨╛╨╢╨╕╨┤╨░╨╜╨╕╤П ╨╛╤З╨╡╤А╨╡╨┤╨╕ ╨▓ ╤Б╨╡╨║╤Г╨╜╨┤╨░╤Е |
+| `CACHE_PRIORITY` | `high` | `normal` или `high` |
+| `CACHE_TIMEOUT_SEC` | `5` | timeout ожидания очереди в секундах |
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П `make find-element`:
+Переменные только для `make find-element`:
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `FIND_TYPE` | ╨┐╤Г╤Б╤В╨╛ | ╨║╨╛╤А╨╛╤В╨║╨╕╨╣ ╤В╨╕╨┐ ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨░, ╨╜╨░╨┐╤А╨╕╨╝╨╡╤А `Button` |
-| `FIND_TEXT` | ╨┐╤Г╤Б╤В╨╛ | ╤В╨╛╤З╨╜╤Л╨╣ ╨╕╨╗╨╕ contains-╨┐╨╛╨╕╤Б╨║ ╨┐╨╛ `text` |
-| `FIND_RESOURCE_ID` | ╨┐╤Г╤Б╤В╨╛ | ╤В╨╛╤З╨╜╤Л╨╣ ╨┐╨╛╨╕╤Б╨║ ╨┐╨╛ `resource-id` |
-| `FIND_CONTENT_DESC` | ╨┐╤Г╤Б╤В╨╛ | ╤В╨╛╤З╨╜╤Л╨╣ ╨╕╨╗╨╕ contains-╨┐╨╛╨╕╤Б╨║ ╨┐╨╛ `content-desc` |
-| `FIND_HINT` | ╨┐╤Г╤Б╤В╨╛ | ╤В╨╛╤З╨╜╤Л╨╣ ╨╕╨╗╨╕ contains-╨┐╨╛╨╕╤Б╨║ ╨┐╨╛ `hint` |
-| `FIND_MATCH` | `exact` | ╤А╨╡╨╢╨╕╨╝ ╨┐╨╛╨╕╤Б╨║╨░: `exact` ╨╕╨╗╨╕ `contains` |
-| `FIND_PRIORITY` | `normal` | `normal` ╨╕╨╗╨╕ `high` |
-| `FIND_TIMEOUT_SEC` | `30` | timeout ╨╖╨░╨┐╤А╨╛╤Б╨░ ╨▓ ╤Б╨╡╨║╤Г╨╜╨┤╨░╤Е |
+| `FIND_TYPE` | пусто | короткий тип элемента, например `Button` |
+| `FIND_TEXT` | пусто | точный или contains-поиск по `text` |
+| `FIND_RESOURCE_ID` | пусто | точный поиск по `resource-id` |
+| `FIND_CONTENT_DESC` | пусто | точный или contains-поиск по `content-desc` |
+| `FIND_HINT` | пусто | точный или contains-поиск по `hint` |
+| `FIND_MATCH` | `exact` | режим поиска: `exact` или `contains` |
+| `FIND_PRIORITY` | `normal` | `normal` или `high` |
+| `FIND_TIMEOUT_SEC` | `30` | timeout запроса в секундах |
 
-╨Х╤Б╨╗╨╕ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨╜╨╡ ╨╜╨░╨╣╨┤╨╡╨╜, `POST /find-element` ╨▓╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В `404`: ╤Ж╨╡╨╗╤М ╨╖╨░╨┐╤А╨╛╤Б╨░ ╨╜╨╡ ╨▓╤Л╨┐╨╛╨╗╨╜╨╡╨╜╨░.
+Если элемент не найден, `POST /find-element` возвращает `404`: цель запроса не выполнена.
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П `make wait-for-element`:
+Переменные только для `make wait-for-element`:
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `WAIT_TYPE` | ╨┐╤Г╤Б╤В╨╛ | ╨║╨╛╤А╨╛╤В╨║╨╕╨╣ ╤В╨╕╨┐ ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨░, ╨╜╨░╨┐╤А╨╕╨╝╨╡╤А `Button` |
-| `WAIT_TEXT` | ╨┐╤Г╤Б╤В╨╛ | ╤В╨╛╤З╨╜╤Л╨╣ ╨╕╨╗╨╕ contains-╨┐╨╛╨╕╤Б╨║ ╨┐╨╛ `text` |
-| `WAIT_RESOURCE_ID` | ╨┐╤Г╤Б╤В╨╛ | ╤В╨╛╤З╨╜╤Л╨╣ ╨┐╨╛╨╕╤Б╨║ ╨┐╨╛ `resource-id` |
-| `WAIT_CONTENT_DESC` | ╨┐╤Г╤Б╤В╨╛ | ╤В╨╛╤З╨╜╤Л╨╣ ╨╕╨╗╨╕ contains-╨┐╨╛╨╕╤Б╨║ ╨┐╨╛ `content-desc` |
-| `WAIT_HINT` | ╨┐╤Г╤Б╤В╨╛ | ╤В╨╛╤З╨╜╤Л╨╣ ╨╕╨╗╨╕ contains-╨┐╨╛╨╕╤Б╨║ ╨┐╨╛ `hint` |
-| `WAIT_MATCH` | `exact` | ╤А╨╡╨╢╨╕╨╝ ╨┐╨╛╨╕╤Б╨║╨░: `exact` ╨╕╨╗╨╕ `contains` |
-| `WAIT_PRIORITY` | `normal` | `normal` ╨╕╨╗╨╕ `high` |
-| `WAIT_TIMEOUT_SEC` | `30` | ╤Б╨║╨╛╨╗╤М╨║╨╛ ╤Б╨╡╨║╤Г╨╜╨┤ ╨╢╨┤╨░╤В╤М ╨┐╨╛╤П╨▓╨╗╨╡╨╜╨╕╤П ╤Н╨╗╨╡╨╝╨╡╨╜╤В╨░ |
-| `WAIT_CHECK_INTERVAL_MS` | `500` | ╨╕╨╜╤В╨╡╤А╨▓╨░╨╗ ╨┐╤А╨╛╨▓╨╡╤А╨║╨╕ UI dump; ╨╝╨╕╨╜╨╕╨╝╤Г╨╝ `100` |
+| `WAIT_TYPE` | пусто | короткий тип элемента, например `Button` |
+| `WAIT_TEXT` | пусто | точный или contains-поиск по `text` |
+| `WAIT_RESOURCE_ID` | пусто | точный поиск по `resource-id` |
+| `WAIT_CONTENT_DESC` | пусто | точный или contains-поиск по `content-desc` |
+| `WAIT_HINT` | пусто | точный или contains-поиск по `hint` |
+| `WAIT_MATCH` | `exact` | режим поиска: `exact` или `contains` |
+| `WAIT_PRIORITY` | `normal` | `normal` или `high` |
+| `WAIT_TIMEOUT_SEC` | `30` | сколько секунд ждать появления элемента |
+| `WAIT_CHECK_INTERVAL_MS` | `500` | интервал проверки UI dump; минимум `100` |
 
-╨Х╤Б╨╗╨╕ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨╜╨╡ ╨┐╨╛╤П╨▓╨╕╨╗╤Б╤П ╨╖╨░ `WAIT_TIMEOUT_SEC`, `POST /wait-for-element` ╨▓╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В `408`.
+Если элемент не появился за `WAIT_TIMEOUT_SEC`, `POST /wait-for-element` возвращает `408`.
 
-╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╡ ╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П `make detect-state`:
+Переменные только для `make detect-state`:
 
-| ╨Я╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П | ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О | ╨Э╨░╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ |
+| Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `DETECT_MODE` | `ui` | ╤А╨╡╨╢╨╕╨╝: `auto`, `ui` ╨╕╨╗╨╕ `vlm` |
-| `DETECT_PLATFORM` | `android` | ╨┐╨╛╨┤╤Б╨║╨░╨╖╨║╨░ ╨┤╨╗╤П VLM: `instagram`, `tiktok`, `youtube`, `android` ╨╕ ╤В.╨┐. |
-| `DETECT_USE_SCREENSHOT` | `true` | ╨┤╨╡╨╗╨░╤В╤М screenshot ╨┤╨╗╤П VLM-╨░╨╜╨░╨╗╨╕╨╖╨░ |
-| `DETECT_STORE_SCREENSHOT` | `false` | ╤Б╨╛╤Е╤А╨░╨╜╤П╤В╤М screenshot ╨▓ MinIO ╨╕ ╨▓╨╡╤А╨╜╤Г╤В╤М ╤Б╤Б╤Л╨╗╨║╤Г |
-| `DETECT_PRIORITY` | `normal` | `normal` ╨╕╨╗╨╕ `high` |
-| `DETECT_TIMEOUT_SEC` | `30` | timeout ╨╖╨░╨┐╤А╨╛╤Б╨░ ╨▓ ╤Б╨╡╨║╤Г╨╜╨┤╨░╤Е |
+| `DETECT_MODE` | `ui` | режим: `auto`, `ui` или `vlm` |
+| `DETECT_PLATFORM` | `android` | подсказка для VLM: `instagram`, `tiktok`, `youtube`, `android` и т.п. |
+| `DETECT_USE_SCREENSHOT` | `true` | делать screenshot для VLM-анализа |
+| `DETECT_STORE_SCREENSHOT` | `false` | сохранять screenshot в MinIO и вернуть ссылку |
+| `DETECT_PRIORITY` | `normal` | `normal` или `high` |
+| `DETECT_TIMEOUT_SEC` | `30` | timeout запроса в секундах |
 
-╨Х╤Б╨╗╨╕ ╤Б╨╛╤Б╤В╨╛╤П╨╜╨╕╨╡ ╨╜╨╡ ╤А╨░╤Б╨┐╨╛╨╖╨╜╨░╨╜╨╛, `POST /detect-state` ╨▓╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В `200` ╤Б╨╛ `state="unknown"` ╨╕ ╨┤╨╕╨░╨│╨╜╨╛╤Б╤В╨╕╨║╨╛╨╣ `description`, `elements`, `matched_signals`, `backend_used`.
+Если состояние не распознано, `POST /detect-state` возвращает `200` со `state="unknown"` и диагностикой `description`, `elements`, `matched_signals`, `backend_used`.
 
-╨Я╤А╨╕╨╝╨╡╤А ╨╗╨╛╨║╨░╨╗╤М╨╜╨╛╨│╨╛ ╨╖╨░╨┐╤Г╤Б╨║╨░ ╤Б ╨╜╨╡╤Б╤В╨░╨╜╨┤╨░╤А╤В╨╜╤Л╨╝╨╕ ╨┐╨╛╤А╤В╨░╨╝╨╕:
+Пример локального запуска с нестандартными портами:
 
 ```bash
 OBSERVER_HTTP_ADDR=127.0.0.1:19091 make run
 ```
 
-## ╨а╨░╨▒╨╛╤В╨░ ╨▓ ╨║╨╛╨╝╨░╨╜╨┤╨╡
+## Работа в команде
 
-╨Т ╤А╨╡╨┐╨╛╨╖╨╕╤В╨╛╤А╨╕╨╕ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В╤Б╤П GitHub Flow. ╨С╨░╨╖╨╛╨▓╨░╤П ╨▓╨╡╤В╨║╨░ ╨┐╤А╨╛╨╡╨║╤В╨░ ╤Б╨╡╨╣╤З╨░╤Б тАФ `master`.
+В репозитории используется GitHub Flow. Базовая ветка проекта сейчас — `master`.
 
-1. ╨Ч╨░╨▒╨╡╤А╨╕ ╤Б╨▓╨╡╨╢╤Г╤О ╨▒╨░╨╖╨╛╨▓╤Г╤О ╨▓╨╡╤В╨║╤Г:
+1. Забери свежую базовую ветку:
 
    ```bash
    git checkout master
    git pull origin master
    ```
 
-2. ╨б╨╛╨╖╨┤╨░╨╣ ╨╛╤В╨┤╨╡╨╗╤М╨╜╤Г╤О ╨▓╨╡╤В╨║╤Г ╨┐╨╛╨┤ ╨╖╨░╨┤╨░╤З╤Г:
+2. Создай отдельную ветку под задачу:
 
    ```bash
    git checkout -b feature/short-task-name
    ```
 
-3. ╨Ф╨╡╨╗╨░╨╣ ╨╜╨╡╨▒╨╛╨╗╤М╤И╨╕╨╡ ╨║╨╛╨╝╨╝╨╕╤В╤Л ╨▓ ╤Д╨╛╤А╨╝╨░╤В╨╡ Conventional Commits:
+3. Делай небольшие коммиты в формате Conventional Commits:
 
    ```bash
    git commit -m "feat: add observer health checks"
@@ -445,33 +449,33 @@ OBSERVER_HTTP_ADDR=127.0.0.1:19091 make run
    git commit -m "docs: describe team workflow"
    ```
 
-4. ╨Я╨╡╤А╨╡╨┤ Pull Request ╨╖╨░╨┐╤Г╤Б╤В╨╕ ╨┐╤А╨╛╨▓╨╡╤А╨║╨╕:
+4. Перед Pull Request запусти проверки:
 
    ```bash
    make fmt
    make check
    ```
 
-5. ╨Ч╨░╨┐╤Г╤И╤М feature-╨▓╨╡╤В╨║╤Г ╨╕ ╨╛╤В╨║╤А╨╛╨╣ Pull Request ╨▓ `master`:
+5. Запушь feature-ветку и открой Pull Request в `master`:
 
    ```bash
    git push -u origin feature/short-task-name
    ```
 
-6. ╨Т Pull Request ╨║╤А╨░╤В╨║╨╛ ╨╛╨┐╨╕╤И╨╕, ╤З╤В╨╛ ╨╕╨╖╨╝╨╡╨╜╨╕╨╗╨╛╤Б╤М, ╨║╨░╨║ ╨┐╤А╨╛╨▓╨╡╤А╤П╨╗╨╛╤Б╤М ╨╕ ╨╡╤Б╤В╤М ╨╗╨╕ ╤А╨╕╤Б╨║╨╕.
+6. В Pull Request кратко опиши, что изменилось, как проверялось и есть ли риски.
 
-## ╨Я╤А╨░╨▓╨╕╨╗╨░ ╨║╨╛╨╝╨░╨╜╨┤╤Л
+## Правила команды
 
-- ╨Э╨╡ ╨┐╤Г╤И╨╕╤В╤М ╨╜╨░╨┐╤А╤П╨╝╤Г╤О ╨▓ `master`; ╨╕╨╖╨╝╨╡╨╜╨╡╨╜╨╕╤П ╨┐╨╛╨┐╨░╨┤╨░╤О╤В ╤В╤Г╨┤╨░ ╤В╨╛╨╗╤М╨║╨╛ ╤З╨╡╤А╨╡╨╖ Pull Request.
-- ╨Ф╨╡╤А╨╢╨░╤В╤М ╨▓╨╡╤В╨║╨╕ ╨║╨╛╤А╨╛╤В╨║╨╕╨╝╨╕ ╨╕ ╤А╨╡╨│╤Г╨╗╤П╤А╨╜╨╛ ╤Б╨╕╨╜╤Е╤А╨╛╨╜╨╕╨╖╨╕╤А╨╛╨▓╨░╤В╤М╤Б╤П ╤Б `origin/master`.
-- ╨Ф╨╗╤П ╨╗╨╕╤З╨╜╨╛╨╣ ╨▓╨╡╤В╨║╨╕ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╤М `git rebase origin/master`; ╨┤╨╗╤П ╨╛╨▒╤Й╨╡╨╣ ╨▓╨╡╤В╨║╨╕ ╨▒╨╡╨╖╨╛╨┐╨░╤Б╨╜╨╡╨╡ `git merge origin/master`.
-- ╨Э╨╡ ╨║╨╛╨╝╨╝╨╕╤В╨╕╤В╤М `.env`, ╨║╨╗╤О╤З╨╕, ╤В╨╛╨║╨╡╨╜╤Л ╨╕ MinIO credentials.
-- ╨Э╨╡ ╨╝╨╡╨╜╤П╤В╤М protobuf ╨▒╨╡╨╖ ╤Б╨╛╨│╨╗╨░╤Б╨╛╨▓╨░╨╜╨╕╤П ╤Б ╨┐╨╛╤В╤А╨╡╨▒╨╕╤В╨╡╨╗╤П╨╝╨╕ API.
-- ╨Э╨╡ ╨┤╨╛╨▒╨░╨▓╨╗╤П╤В╤М tap/swipe/text-╨╗╨╛╨│╨╕╨║╤Г ╨▓ observer: ╨┤╨╡╨╣╤Б╤В╨▓╨╕╤П ╨┐╤А╨╕╨╜╨░╨┤╨╗╨╡╨╢╨░╤В executor-╤Б╨╡╤А╨▓╨╕╤Б╤Г.
-- ╨Э╨╡ ╤Г╨┐╤А╨░╨▓╨╗╤П╤В╤М ADB connect/forward ╨▓ observer: ╤Н╤В╨╛ ╨╖╨╛╨╜╨░ connector-╤Б╨╡╤А╨▓╨╕╤Б╨░.
-- ╨Х╤Б╨╗╨╕ ╨╝╨╡╨╜╤П╨╡╤В╤Б╤П ╨┐╨╛╨▓╨╡╨┤╨╡╨╜╨╕╨╡ ╤Б╨╡╤А╨▓╨╕╤Б╨░, ╨╛╨▒╨╜╨╛╨▓╨╗╤П╤В╤М README, AGENTS.md ╨╕╨╗╨╕ CLAUDE.md ╤А╤П╨┤╨╛╨╝ ╤Б ╨║╨╛╨┤╨╛╨╝.
+- Не пушить напрямую в `master`; изменения попадают туда только через Pull Request.
+- Держать ветки короткими и регулярно синхронизироваться с `origin/master`.
+- Для личной ветки использовать `git rebase origin/master`; для общей ветки безопаснее `git merge origin/master`.
+- Не коммитить `.env`, ключи, токены и MinIO credentials.
+- Не менять protobuf без согласования с потребителями API.
+- Не добавлять tap/swipe/text-логику в observer: действия принадлежат executor-сервису.
+- Не управлять ADB connect/forward в observer: это зона connector-сервиса.
+- Если меняется поведение сервиса, обновлять README, AGENTS.md или CLAUDE.md рядом с кодом.
 
-## ╨б╨╕╨╜╤Е╤А╨╛╨╜╨╕╨╖╨░╤Ж╨╕╤П ╨▓╨╡╤В╨║╨╕
+## Синхронизация ветки
 
 ```bash
 git fetch origin
@@ -479,10 +483,10 @@ git rebase origin/master
 make check
 ```
 
-╨Я╨╛╤Б╨╗╨╡ rebase ╨┐╤Г╤И╨╕╤В╤М ╤В╨╛╨╗╤М╨║╨╛ ╤Б╨▓╨╛╤О feature-╨▓╨╡╤В╨║╤Г:
+После rebase пушить только свою feature-ветку:
 
 ```bash
 git push --force-with-lease
 ```
 
-`--force-with-lease` ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╤М ╤В╨╛╨╗╤М╨║╨╛ ╨┐╨╛╤Б╨╗╨╡ rebase ╤Б╨▓╨╛╨╡╨╣ ╨▓╨╡╤В╨║╨╕. ╨Ф╨╗╤П `master` ╨┐╤А╤П╨╝╨╛╨╣ push ╨╖╨░╨┐╤А╨╡╤Й╤С╨╜.
+`--force-with-lease` использовать только после rebase своей ветки. Для `master` прямой push запрещён.
