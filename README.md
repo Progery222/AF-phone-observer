@@ -5,11 +5,73 @@
 
 ## Что делает сервис
 
-- поднимает gRPC-сервис на `:50053`;
+- поднимает gRPC-сервер на `:50053`; protobuf-контракт есть, но `ObserverService` пока не зарегистрирован в Go-handler;
 - отдаёт health/ready endpoints на `:9090` при прямом запуске сервиса;
 - сохраняет PNG-скриншоты в MinIO;
 - продолжает работать в noop-режиме, если MinIO недоступен при старте;
 - не выполняет жесты, tap, swipe, ввод текста и ADB forward.
+
+## Функциональность, методы и связи
+
+`AF-phone-observer` — read-only сервис наблюдения. Он получает данные с Android-устройства, приводит их к удобному API-ответу и отдаёт другим частям AF координаты, UI-дерево, скриншоты и признаки текущего экрана.
+
+### Основной функционал
+
+| Возможность | Что делает |
+|-------------|------------|
+| Скриншот | Получает PNG через ADB `exec-out screencap -p`, определяет размер изображения и сохраняет результат в MinIO или `NoopStorage` |
+| UI dump | Запускает `uiautomator dump`, читает XML с телефона и парсит элементы: `type`, `text`, `resource_id`, `content_desc`, `hint`, `bounds`, `center` |
+| Поиск элемента | Ищет один UI-элемент по `resource_id`, `text`, `content_desc`, `hint` или `type`; поддерживает `exact` и `contains` |
+| Ожидание элемента | Повторяет UI dump до появления элемента или до timeout |
+| Detect state | Определяет состояние экрана по UI dump, а в режимах `auto`/`vlm` может дополнять результат VLM-анализом скриншота |
+| Cache | Хранит последний успешный screenshot/UI dump в памяти текущей observer-реплики и умеет очищать cache по `serial` |
+| Очереди устройств | Для одного `serial` выполняет задачи последовательно через worker; разные `serial` обрабатываются параллельно |
+| Health/ready | `/health` проверяет, что HTTP-сервер жив; `/ready` проверяет доступность storage через `ObjectStorage.Ping` |
+
+### Публичные методы
+
+Фактическая рабочая поверхность сейчас — HTTP API и CLI-команды из `cmd/*`.
+
+| Метод | Endpoint | Назначение |
+|-------|----------|------------|
+| `GET` | `/health` | Проверить, что observer запущен |
+| `GET` | `/ready` | Проверить готовность storage |
+| `POST` | `/screenshot` | Сделать screenshot и сохранить его в storage |
+| `POST` | `/dump-ui` | Получить свежий UI dump в `json` или `xml` |
+| `POST` | `/find-element` | Найти элемент на текущем экране |
+| `POST` | `/wait-for-element` | Дождаться появления элемента |
+| `POST` | `/detect-state` | Определить состояние экрана в режиме `ui`, `auto` или `vlm` |
+| `GET` | `/screen/{serial}` | Сделать свежий screenshot через worker конкретного телефона |
+| `GET` | `/ui/{serial}` | Сделать свежий UI dump через worker конкретного телефона |
+| `DELETE` | `/cache/{serial}` | Очистить in-memory cache для телефона |
+
+В protobuf описан gRPC-сервис `ObserverService` с RPC `CaptureScreenshot`, `DumpUI`, `DetectState` в `proto/observer/v1/observer.proto`. На текущий момент `ObserverHandler.Register` оставлен как no-op, поэтому protobuf-контракт есть, но полноценная Go-регистрация gRPC API ещё не завершена.
+
+### Ключевые функции и методы в коде
+
+| Слой | Методы/функции | Роль |
+|------|----------------|------|
+| `internal/config` | `Load`, `env`, `envInt`, `parseLogLevel` | Загружает адреса, MinIO, очереди, timeouts, VLM-настройки и уровень логов из env |
+| `internal/domain` | `ParseUIDump`, `FindElement`, `ValidateFindElementQuery`, `DetectScreenFromUIDump`, `MergeScreenDetections`, `NormalizeVLMState` | Парсит UI XML, ищет элементы и классифицирует состояние экрана |
+| `internal/service` | `ObserveService.DumpUI`, `DumpUIDocument`, `DetectState` | Бизнес-логика UI-наблюдения поверх `port.UIDumper` |
+| `internal/service` | `ScreenshotService.Capture`, `CaptureAndStore` | Получает screenshot через порт и сохраняет PNG в storage |
+| `internal/service` | `ObservationDispatcher.Capture`, `DumpUI`, `FindElement`, `WaitForElement`, `DetectState`, `CurrentScreen`, `CurrentUI`, `ClearCache` | Ставит задачи в per-serial worker, управляет priority-очередями и cache |
+| `internal/adapter/driver` | `UIAutomatorDriver.DumpUI`, `DetectState`, `Ping` | Работает с ADB `uiautomator` и проверяет ADB |
+| `internal/adapter/driver` | `AdbScreenshotDriver.Capture` | Получает PNG через ADB или stub PNG для `serial=stub` |
+| `internal/adapter/driver` | `CascadingScreenAnalyzer.Analyze` | Вызывает VLM backends по цепочке: VisionServer, Ollama, OpenAI-compatible API |
+| `internal/adapter/repository` | `MinIOStorage.Upload`, `Ping`, `NoopStorage.Upload`, `Ping` | Загружает PNG в MinIO или возвращает noop-ссылку без реального upload |
+| `internal/adapter/handler` | `HTTPHandler.Routes` и обработчики endpoint'ов | Принимает HTTP-запросы, валидирует параметры и маппит доменные ошибки в HTTP status |
+
+### Связь с другими сервисами и инфраструктурой
+
+| Компонент | Как связан |
+|-----------|------------|
+| AF orchestrator/clients | Вызывают observer, когда нужно понять, что сейчас на экране телефона, получить screenshot, UI dump, состояние экрана или координаты элемента |
+| phone-executor | Использует данные observer для действий: observer только находит элементы и координаты, а tap/swipe/text выполняет executor |
+| phone-connector | Отвечает за ADB connect/forward; observer не управляет подключением, а работает с уже доступным локальным `adb -s {serial}` |
+| Android device | Источник данных: `screencap -p` для screenshot и `uiautomator dump` для UI XML |
+| MinIO | Хранилище PNG-скриншотов; при недоступности на старте сервис использует `NoopStorage` |
+| VisionServer/Ollama/OpenAI-compatible API | Опциональные VLM backends для анализа скриншотов в `detect-state` |
 
 ## Требования
 
