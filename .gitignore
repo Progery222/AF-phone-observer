@@ -7,3 +7,7 @@ phone-observer
 .vscode/
 .cursorrules
 .cursor/
+Farm/
+deploy/minio-data/
+deploy/minio-data-fresh/
+tools/minio/data/

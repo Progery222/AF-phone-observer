@@ -15,6 +15,7 @@ type Config struct {
 	MinioSecretKey          string
 	MinioBucket             string
 	MinioUseSSL             bool
+	MinioPublicBaseURL      string
 	ScreenshotTmpDir        string
 	ScreenshotTimeoutSec    int
 	DumpUITimeoutSec        int
@@ -41,6 +42,7 @@ func Load() Config {
 		MinioSecretKey:          env("MINIO_SECRET_KEY", "minioadmin"),
 		MinioBucket:             env("MINIO_BUCKET", "af-screenshots"),
 		MinioUseSSL:             env("MINIO_USE_SSL", "false") == "true",
+		MinioPublicBaseURL:      env("MINIO_PUBLIC_BASE_URL", "http://127.0.0.1:9000"),
 		ScreenshotTmpDir:        env("SCREENSHOT_TMP_DIR", os.TempDir()),
 		ScreenshotTimeoutSec:    envInt("SCREENSHOT_TIMEOUT_SEC", 10),
 		DumpUITimeoutSec:        envInt("DUMP_UI_TIMEOUT_SEC", 30),

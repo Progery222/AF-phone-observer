@@ -25,10 +25,11 @@ func NewUIAutomatorDriver(log port.Logger) *UIAutomatorDriver {
 }
 
 func (u *UIAutomatorDriver) DumpUI(ctx context.Context, serial string) (domain.ScreenState, error) {
-	if serial == "stub" {
+	if IsTestSerial(serial) {
 		return domain.ScreenState{
-			Serial:  serial,
-			XMLDump: `<hierarchy><node text="OK" resource-id="stub:id/ok" content-desc="Create" hint="" class="android.widget.Button" bounds="[0,0][2,2]" /></hierarchy>`,
+			Serial: serial,
+			XMLDump: `<hierarchy><node text="Войти" content-desc="login" class="android.widget.Button" bounds="[400,500][680,580]" />` +
+				`<node text="OK" resource-id="stub:id/ok" content-desc="Create" /></hierarchy>`,
 		}, nil
 	}
 	remote := fmt.Sprintf("/sdcard/af_window_dump_%d.xml", time.Now().UnixNano())
@@ -84,7 +85,7 @@ func (a *AdbScreenshotDriver) Capture(ctx context.Context, serial string) (domai
 	takenAt := time.Now().UTC()
 	var out []byte
 	var err error
-	if serial == "stub" {
+	if IsTestSerial(serial) {
 		out, err = stubScreenshotPNG()
 	} else {
 		out, err = adbCommandContext(ctx, "adb", "-s", serial, "exec-out", "screencap", "-p").Output()
