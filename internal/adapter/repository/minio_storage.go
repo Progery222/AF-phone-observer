@@ -41,7 +41,7 @@ func NewMinIOStorage(cfg config.Config) (*MinIOStorage, func(), error) {
 func waitMinIOReady(ctx context.Context, client *minio.Client, cfg config.Config) error {
 	var lastErr error
 	for attempt := 0; attempt < 40; attempt++ {
-		if err := pingMinIOReady(cfg); err != nil {
+		if err := pingMinIOReady(ctx, cfg); err != nil {
 			lastErr = err
 			time.Sleep(500 * time.Millisecond)
 			continue
@@ -70,13 +70,13 @@ func waitMinIOReady(ctx context.Context, client *minio.Client, cfg config.Config
 	return fmt.Errorf("minio not ready")
 }
 
-func pingMinIOReady(cfg config.Config) error {
+func pingMinIOReady(ctx context.Context, cfg config.Config) error {
 	scheme := "http"
 	if cfg.MinioUseSSL {
 		scheme = "https"
 	}
 	url := fmt.Sprintf("%s://%s/minio/health/ready", scheme, cfg.MinioEndpoint)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,9 @@ func pingMinIOReady(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("minio health ready %d", resp.StatusCode)
 	}

@@ -64,6 +64,53 @@ func TestDoWithAutoStartRetriesLocalConnectionRefused(t *testing.T) {
 	}
 }
 
+func TestDoWithAutoStartRetriesLocalWindowsRefused(t *testing.T) {
+	attempts := 0
+	started := false
+	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		attempts++
+		if attempts == 1 {
+			return nil, errors.New("Post \"http://127.0.0.1:19093/dump-ui\": dial tcp 127.0.0.1:19093: connectex: No connection could be made because the target machine actively refused it.")
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"ok":true}`)),
+		}, nil
+	})}
+
+	resp, cleanup, err := DoWithAutoStart(
+		context.Background(),
+		client,
+		"http://127.0.0.1:19093/dump-ui",
+		func() (*http.Request, error) {
+			return http.NewRequestWithContext(context.Background(), http.MethodPost, "http://127.0.0.1:19093/dump-ui", strings.NewReader(`{}`))
+		},
+		AutoStartConfig{
+			Enabled: true,
+			Start: func(context.Context, string, func(string) string, io.Writer) (func(), error) {
+				started = true
+				return func() {}, nil
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("DoWithAutoStart returned error: %v", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if attempts != 2 {
+		t.Fatalf("expected two attempts, got %d", attempts)
+	}
+	if !started {
+		t.Fatal("expected local observer start on Windows-style refusal")
+	}
+	if cleanup != nil {
+		cleanup()
+	}
+}
+
 func TestDoWithAutoStartDoesNotStartForRemoteURL(t *testing.T) {
 	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
 		return nil, errors.New("Post \"http://example.com/dump-ui\": dial tcp 203.0.113.10:9090: connect: connection refused")
