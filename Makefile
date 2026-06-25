@@ -75,8 +75,9 @@ build:
 build-bin:
 	$(GO) build -o $(BINARY)$(shell $(GO) env GOEXE) $(MAIN)
 
+run: export HEALTH_ADDR := $(HEALTH_ADDR)
 run:
-	HEALTH_ADDR="$(HEALTH_ADDR)" $(GO) run $(MAIN)
+	$(GO) run $(MAIN)
 
 adb-devices:
 	adb devices

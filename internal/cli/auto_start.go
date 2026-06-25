@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -136,7 +138,20 @@ func shouldAutoStart(endpoint string, err error) bool {
 	if parseErr != nil || !ok {
 		return false
 	}
-	return strings.Contains(strings.ToLower(err.Error()), "connection refused")
+	return isConnectionRefused(err)
+}
+
+// isConnectionRefused распознаёт «соединение отклонено» кросс-платформенно:
+// на Unix текст ошибки содержит "connection refused", а на Windows —
+// "target machine actively refused it" (connectex). errors.Is покрывает
+// случаи, когда ошибка оборачивает syscall.ECONNREFUSED.
+func isConnectionRefused(err error) bool {
+	if errors.Is(err, syscall.ECONNREFUSED) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "connection refused") ||
+		strings.Contains(msg, "actively refused")
 }
 
 func localObserverAddresses(endpoint string) (string, string, bool, error) {
